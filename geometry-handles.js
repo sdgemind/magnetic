@@ -1,3 +1,5 @@
+(() => {
+"use strict";
 const finite = (value, fallback = 0) =>
   Number.isFinite(Number(value)) ? Number(value) : fallback;
 
@@ -180,9 +182,11 @@ function boundedHandles(p) {
   return handles;
 }
 
-export function getHandles(key, p = {}, s = {}) {
+function getHandles(key, p = {}, s = {}) {
   if (key === "dynamic") return dynamicHandles(p, s);
   if (key === "focusing") return focusingHandles(p);
   if (key === "bounded") return boundedHandles(p);
   return [];
 }
+globalThis.PhysicsLab.getHandles = getHandles;
+})();

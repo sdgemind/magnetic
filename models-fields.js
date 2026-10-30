@@ -1,3 +1,5 @@
+(() => {
+"use strict";
 const C = {
   bg: "#101e32",
   field: "#17324a",
@@ -689,4 +691,5 @@ const cyclotron = {
     else if (key === "reset") resetCyclotron(s);
   },
 };
-export const models = { bounded, drift, cyclotron };
+Object.assign(globalThis.PhysicsLab.models, { bounded, drift, cyclotron });
+})();

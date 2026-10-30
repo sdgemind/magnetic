@@ -1,8 +1,6 @@
-import { models as optical } from "./models-optics.js";
-import { models as fields } from "./models-fields.js";
-import { models as space } from "./models-space.js";
-import { getHandles } from "./geometry-handles.js";
-const models = { ...optical, ...fields, ...space };
+(() => {
+"use strict";
+const { models, getHandles } = globalThis.PhysicsLab;
 const order = [
   "dynamic",
   "focusing",
@@ -779,3 +777,4 @@ selectModel(
   order.includes(location.hash.slice(1)) ? location.hash.slice(1) : "dynamic",
 );
 requestAnimationFrame(frame);
+})();

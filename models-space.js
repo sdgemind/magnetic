@@ -1,3 +1,5 @@
+(() => {
+"use strict";
 const TAU = Math.PI * 2;
 const clamp = (v, lo, hi) =>
   Math.max(lo, Math.min(hi, Number.isFinite(v) ? v : lo));
@@ -596,4 +598,5 @@ const solenoid = {
     } else if (phase === "up" || phase === "cancel") s.dragging = false;
   },
 };
-export const models = { righthand, solenoid };
+Object.assign(globalThis.PhysicsLab.models, { righthand, solenoid });
+})();

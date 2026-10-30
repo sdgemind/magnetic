@@ -1,3 +1,5 @@
+(() => {
+"use strict";
 const C = {
   cyan: "#4cddcc",
   orange: "#ffba69",
@@ -385,4 +387,5 @@ function emit(s, p) {
     });
   }
 }
-export const models = { dynamic, focusing };
+globalThis.PhysicsLab = { models: { dynamic, focusing } };
+})();
