@@ -1,0 +1,1348 @@
+<!doctype html>
+<html lang="zh-CN">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>安培定则 · 通电螺线管 · 交互动画</title>
+  <style>
+  :root{
+    --ink:#1e293b;
+    --ink2:#64748b;
+    --ink3:#94a3b8;
+    --line:#dde5f0;
+    --card:rgba(255,255,255,.82);
+    --blue:#2563eb;
+    --cyan:#0891b2;
+    --amber:#f59e0b;
+    --r:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1100px 760px at 18% -6%, #ffffff 0%, #eef3fb 42%, #e4ebf7 100%);
+    overflow:hidden;
+    user-select:none;
+  }
+  #scene{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab;}
+  #scene.grabbing{cursor:grabbing;}
+
+  .card{
+    position:fixed;
+    background:var(--card);
+    -webkit-backdrop-filter:blur(14px) saturate(1.4);
+    backdrop-filter:blur(14px) saturate(1.4);
+    border:1px solid rgba(255,255,255,.9);
+    box-shadow:0 10px 30px -12px rgba(30,58,110,.28), 0 2px 8px -4px rgba(30,58,110,.12);
+    border-radius:var(--r);
+  }
+
+  /* ---- 标题 ---- */
+  .title{top:22px;left:24px;padding:14px 20px 15px;}
+  .title h1{margin:0;font-size:19px;letter-spacing:.5px;font-weight:700;}
+  .title h1 .dot{color:var(--amber);}
+  .title p{margin:5px 0 0;font-size:12px;color:var(--ink2);letter-spacing:.3px;}
+
+  /* ---- 控制面板 ---- */
+  .panel{
+    top:22px;right:24px;width:272px;padding:6px 16px 16px;
+    max-height:calc(100vh - 44px);overflow-y:auto;
+  }
+  .panel::-webkit-scrollbar{width:6px}
+  .panel::-webkit-scrollbar-thumb{background:#cfd9e8;border-radius:3px}
+  .ph{
+    font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:1.6px;
+    padding:12px 2px 10px;position:sticky;top:0;background:linear-gradient(#fff 72%,rgba(255,255,255,0));
+    margin:0 -2px 2px;z-index:2;
+  }
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 2px;}
+  .row.col{display:block;}
+  .lb{font-size:12.5px;color:#334155;font-weight:600;}
+  .lb-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .val{font-size:12px;color:var(--blue);font-weight:700;font-variant-numeric:tabular-nums;}
+  .divider{height:1px;background:var(--line);margin:6px 0;}
+
+  /* 分段按钮 */
+  .seg{display:flex;gap:0;border:1px solid var(--line);border-radius:10px;padding:3px;background:#f3f6fb;}
+  .seg button{
+    flex:1;border:0;background:transparent;padding:7px 6px;border-radius:7px;cursor:pointer;
+    font-size:12px;font-weight:600;color:var(--ink2);font-family:inherit;transition:.18s;white-space:nowrap;
+  }
+  .seg button:hover{color:var(--ink);}
+  .seg button.on{
+    background:#fff;color:var(--blue);
+    box-shadow:0 1px 4px -1px rgba(37,99,235,.35), 0 0 0 1px rgba(37,99,235,.14);
+  }
+  .seg.full{margin-top:8px;}
+
+  /* 滑块 */
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;outline:none;
+    background:linear-gradient(90deg,var(--blue),#60a5fa);margin:4px 0 2px;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;cursor:pointer;
+    border:2.5px solid var(--blue);box-shadow:0 2px 6px -1px rgba(37,99,235,.5);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;background:#fff;border:2.5px solid var(--blue);cursor:pointer;
+  }
+
+  /* 开关 */
+  .sw{
+    width:40px;height:23px;border-radius:12px;background:#d7dfeb;border:0;position:relative;cursor:pointer;
+    transition:background .2s;flex:0 0 auto;padding:0;
+  }
+  .sw::after{
+    content:"";position:absolute;top:2.5px;left:2.5px;width:18px;height:18px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(15,23,42,.28);transition:transform .2s cubic-bezier(.4,1.6,.5,1);
+  }
+  .sw.on{background:var(--blue);}
+  .sw.on::after{transform:translateX(17px);}
+
+  .playbtn{
+    width:100%;margin-top:12px;padding:10px;border:0;border-radius:11px;cursor:pointer;
+    font-family:inherit;font-size:13px;font-weight:700;color:#fff;letter-spacing:.5px;
+    background:linear-gradient(135deg,#2563eb,#3b82f6);
+    box-shadow:0 6px 16px -6px rgba(37,99,235,.7);transition:.18s;
+  }
+  .playbtn:hover{filter:brightness(1.07);transform:translateY(-1px);}
+  .playbtn:active{transform:translateY(0);}
+  .playbtn.paused{background:linear-gradient(135deg,#475569,#64748b);box-shadow:0 6px 16px -6px rgba(71,85,105,.6);}
+
+  /* ---- 说明卡 ---- */
+  .info{left:24px;bottom:22px;width:330px;padding:16px 18px 15px;}
+  .info-t{font-size:13.5px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:7px;}
+  .info-t::before{content:"";width:3px;height:14px;border-radius:2px;background:linear-gradient(var(--blue),var(--cyan));}
+  .info p{margin:0;font-size:12.5px;line-height:1.75;color:#475569;}
+  .info b{color:#1d4ed8;font-weight:700;}
+  .info b.am{color:#d97706;}
+  .formula{
+    margin-top:11px;padding:9px 12px;border-radius:10px;
+    background:linear-gradient(135deg,rgba(37,99,235,.07),rgba(8,145,178,.07));
+    border:1px solid rgba(37,99,235,.14);
+    font-family:"Cambria Math",Georgia,"Times New Roman",serif;
+    font-size:15px;text-align:center;color:#1e40af;letter-spacing:.6px;
+  }
+  .formula i{font-style:italic;}
+  .fnote{margin-top:8px;font-size:11.5px;color:var(--ink3);line-height:1.6;}
+
+  /* ---- 右下角转动盘：按住拖动 = 画面在屏幕平面内转动（把导线放平） ---- */
+  .dial{
+    position:fixed;right:24px;bottom:24px;width:92px;height:112px;z-index:3;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    padding:5px 5px 6px;border-radius:20px;cursor:grab;touch-action:none;
+    user-select:none;-webkit-user-select:none;
+    background:rgba(255,255,255,.72);
+    -webkit-backdrop-filter:blur(12px) saturate(1.3);backdrop-filter:blur(12px) saturate(1.3);
+    border:1px solid rgba(255,255,255,.9);
+    box-shadow:0 10px 26px -14px rgba(30,58,110,.35);
+  }
+  .dial:active{cursor:grabbing;}
+  .dial svg{width:76px;height:76px;display:block;}
+  .dial-t{font-size:10.5px;font-weight:700;color:var(--blue);letter-spacing:.4px;}
+
+  .hint{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+    font-size:11.5px;color:var(--ink3);letter-spacing:.4px;
+    background:rgba(255,255,255,.6);padding:6px 14px;border-radius:20px;
+    border:1px solid rgba(255,255,255,.9);backdrop-filter:blur(8px);pointer-events:none;
+    max-width:min(88vw,660px);text-align:center;line-height:1.6;
+  }
+
+  @media (max-width:900px){
+    .info{width:290px;}
+    .panel{width:240px;}
+  }
+  @media (max-width:1040px){ .dial{display:none;} }
+  @media (max-width:760px){
+    .info{display:none;}
+    .title{left:14px;top:14px;padding:10px 14px 11px;}
+    .title h1{font-size:16px;}
+    .title p{display:none;}
+    .panel{
+      top:auto;bottom:12px;left:12px;right:12px;width:auto;
+      max-height:56vh;padding:2px 16px 14px;
+    }
+    .panel .row{padding:6px 2px;}
+    .playbtn{margin-top:10px;padding:9px;}
+    .ph{padding:10px 2px 8px;}
+    .hint{display:none;}
+  }
+  @media (max-height:560px){ .info{display:none;} }
+</style>
+  <meta name="copyright" content="学科网（zxxk.com）版权所有">
+  <meta name="signature" content="QQABBYo1xgiQwATACT4qEwECCQkYkpChJAoMxQCaOARDQZFAFAA=">
+ </head>
+ <body>
+  <canvas id="scene"></canvas>
+  <div class="card title">
+   <h1>安培定则 · 通电螺线管<span class="dot"> ·</span></h1>
+   <p>通电螺线管（电磁铁）产生的磁场</p>
+   <p></p>
+  </div>
+  <div class="card panel">
+   <div class="ph">
+    控 制 面 板
+   </div>
+   <div class="row col"><span class="lb">电流方向</span>
+    <div class="seg full" id="segDir"><button data-v="-1" class="on">逆时针 ↺</button> <button data-v="1">顺时针 ↻</button>
+    </div>
+   </div>
+   <div class="row col">
+    <div class="lb-row"><span class="lb">电流强度 I</span><span class="val" id="valI">1.00 A</span>
+    </div><input type="range" id="rngI" min="0.2" max="2" step="0.05" value="1">
+   </div>
+   <div class="divider"></div>
+   <div class="row col"><span class="lb">观察视角</span>
+    <div class="seg full" id="segView"><button data-v="iso" class="on">立体图</button> <button data-v="side">纵截面</button> <button data-v="top">横截面</button> <button data-v="bottom">仰视</button>
+    </div>
+   </div>
+   <div class="row col"><span class="lb-row"><span class="lb">画面方向</span><span class="val" id="valRoll">竖直</span></span>
+    <div class="seg full" id="segRoll"><button data-v="0" class="on">竖直 ⇅</button> <button data-v="90">横放 ⇄</button>
+    </div>
+   </div>
+   <div class="divider"></div>
+   <div class="row"><span class="lb">显示右手</span><button class="sw on" id="swHand"></button>
+   </div>
+   <div class="row"><span class="lb">显示磁感线</span><button class="sw on" id="swField"></button>
+   </div><button class="playbtn" id="btnPlay">暂停动画</button>
+  </div>
+  <div class="card info">
+   <div class="info-t">
+    定则内容
+   </div>
+   <p>用右手握住螺线管，让<b>四指弯曲的方向</b>与电流的方向一致，那么伸直的<b class="am">拇指所指的那一端</b>就是螺线管的 <b>N 极</b>。</p>
+   <div class="formula"><i>B</i> = μ₀<i>nI</i>
+   </div>
+   <div class="fnote">
+    管内磁场近似匀强（<i>n</i> 为单位长度的匝数）：磁感线在管内由 S 极指向 N 极， <br>
+     到管外再由 N 极回到 S 极，形成一族闭合曲线。<b>线上的箭头所指就是 B 的方向</b>。
+   </div>
+  </div>
+  <div class="hint"><b>横拖</b>环绕 · <b>竖拖</b>俯仰 · 拖右下<b>转向盘<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACMAAAAYCAIAAAD/BtNgAAAAjUlEQVR42u1UQQ7AIAjj/4+my7JkmVIK23UQY8QIbRE1nOaPmbrb+nZfmIV0HkYHngYuOS3PG+OFbXkjJ4K0YYDtQwJziSZVI3f1IIctIevtuqFzSVdH6BN6UyMtV2CMclmWUhO0JrSJo92KnlWv+TxLckSWJb2AigGVC9Ff9vl3+fwbDdIgDdIg/QTpAGjBzclmvaAqAAAAAElFTkSuQmCC" style="position: absolute; left: -99999px; top: -99999px; opacity: 0; pointer-events: none; width: 1px; height: 1px;"></b>或按 <b>Shift</b>/<b>右键</b>拖动、<b>Q/E</b> 可把螺线管转成水平 · 滚轮缩放 · 双击复位
+  </div>
+  <script>
+(function(){
+'use strict';
+
+/* ============================ 基础数学 ============================ */
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+const add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
+const mul=(a,k)=>[a[0]*k,a[1]*k,a[2]*k];
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const nrm=a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return [a[0]/l,a[1]/l,a[2]/l];};
+const D2R=Math.PI/180;
+
+/* ============================ 画布 & 相机 ============================ */
+const cvs=document.getElementById('scene');
+const ctx=cvs.getContext('2d');
+let W=800,H=600,DPR=1;
+
+/* roll = 绕视线轴的滚转。只有 yaw/pitch 的轨道相机会把世界竖直方向永远
+   投影成屏幕竖直方向，导线因此只能是竖的；加上 roll 才能让导线转到水平。*/
+const cam={ yaw:1.28, pitch:0.30, roll:0, pitchT:0.30, rollT:0, dist:5.4, fov:640, oy:0 };
+let camPos=[0,0,8.6], BX=[1,0,0], BY=[0,1,0], BZ=[0,0,-1];
+
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=cvs.clientWidth; H=cvs.clientHeight;
+  cvs.width=Math.round(W*DPR); cvs.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  const narrow = W<760;                 /* 窄屏：面板移到底部，场景上移 */
+  cam.fov = narrow ? Math.min(H*0.62, W*1.15) : Math.min(H*0.82, W*1.15);
+  cam.oy  = narrow ? -H*0.20 : 0;
+}
+window.addEventListener('resize',resize);
+
+function updateCam(){
+  const cp=Math.cos(cam.pitch), sp=Math.sin(cam.pitch);
+  const cy=Math.cos(cam.yaw),  sy=Math.sin(cam.yaw);
+  camPos=[cam.dist*cp*sy, cam.dist*sp, cam.dist*cp*cy];
+  const f=nrm(mul(camPos,-1));
+  /* 视线与导线轴重合时（pitch = ±90°）cross(f,[0,1,0]) 退化为零向量，
+     改用由方位角定义的右向量 —— 它就是该极限的解析值。
+     符号要注意：俯仰越过 ±90° 之后 cos(pitch) 变负，右向量要跟着翻号
+     （相机是真穿了极点）；配合 trackPole() 的滚转补偿，画面才全程连续。 */
+  const r0 = (Math.abs(f[1])>0.999995) ? (cp>=0?[cy,0,-sy]:[-cy,0,sy]) : nrm(cross(f,[0,1,0]));
+  const u0 = cross(r0,f);
+  /* 绕视线轴滚转 roll：得到新的右向量与上向量（r'×u' 仍等于 f，保持右手系）。
+     roll=90° 时世界 +y 会落到屏幕水平方向上，也就是导线横躺。 */
+  const cr=Math.cos(cam.roll), sr=Math.sin(cam.roll);
+  BX=[r0[0]*cr+u0[0]*sr, r0[1]*cr+u0[1]*sr, r0[2]*cr+u0[2]*sr];
+  BY=[u0[0]*cr-r0[0]*sr, u0[1]*cr-r0[1]*sr, u0[2]*cr-r0[2]*sr];
+  BZ=f;
+}
+function project(p){
+  const dx=p[0]-camPos[0], dy=p[1]-camPos[1], dz=p[2]-camPos[2];
+  const x=dx*BX[0]+dy*BX[1]+dz*BX[2];
+  const y=dx*BY[0]+dy*BY[1]+dz*BY[2];
+  const z=dx*BZ[0]+dy*BZ[1]+dz*BZ[2];
+  const depth=z;                       /* BZ 为相机朝向原点的前向单位向量 */
+  if(depth<0.2) return null;
+  const s=cam.fov/depth;
+  return {x:W/2+x*s, y:H/2-y*s+cam.oy, s:s, depth:depth};
+}
+
+/* ============================ 图元系统 ============================ */
+let prims=[];
+const SLATE='#475569', SLATE_L='#94a3b8';
+const BLUE='#2f6fe4', BLUE_L='#5b9bf8';
+const AMBER='#f59e0b', AMBER_L='#fbbf24';
+
+function seg(a,b,w,c,opt){
+  if(!a||!b) return;
+  if(opt&&opt.dash){ segDash(a,b,w,c,(opt.alpha===undefined?1:opt.alpha),opt.ph); return; }
+  prims.push({t:0,a:a,b:b,w:w,c:c,d:(a.depth+b.depth)/2,glow:(opt&&opt.glow)||null,alpha:(opt&&opt.alpha)||1});
+}
+/* --- 虚线段（教材画法：被挡住的绕组用短划线） ---------------------------
+   渲染器是一条线段一个图元、逐段 stroke 的：直接给 ctx 上 setLineDash 的话，
+   每段的相位都从头开始，而一段投影后也就一二十像素，根本连不成虚线。
+   所以自己切：把这一段打成 ≤3.4px 的小截，按**屏幕累积弧长**（ph 传入）决定
+   每个小截落在实段还是空隙里 —— 图案跨段连续，看着才是均匀的短划线，
+   不会每段都从「实」重新开始、变成一节一节的点。 */
+function segDash(a,b,w,c,alpha,ph0){
+  const dx=b.x-a.x, dy=b.y-a.y, L=Math.hypot(dx,dy);
+  if(L<0.8) return;
+  const PER=13.5, ON=8.2;                       /* 一个周期 13.5px：实 8.2 + 空 5.3 */
+  const ph=(((ph0||0)%PER)+PER)%PER;
+  const ds=a.depth, de=b.depth, ss=a.s, se=b.s;
+  const at=t=>({x:a.x+dx*t,y:a.y+dy*t,s:ss+(se-ss)*t,depth:ds+(de-ds)*t});
+  const g1=ph+L;
+  for(let k=Math.floor(ph/PER); k*PER<g1; k++){
+    let s0=k*PER-ph, s1=s0+ON;                  /* 实段在 [0,L] 里的区间 */
+    if(s1<=0) continue;                         /* 这一段整个落在空隙里 */
+    if(s0<0) s0=0;
+    if(s0>=L) break;
+    if(s1>L) s1=L;
+    const A=at(s0/L), B=at(s1/L);
+    prims.push({t:0,a:A,b:B,w:w,c:c,d:(A.depth+B.depth)/2,glow:null,alpha:alpha});
+  }
+}
+function tri(pa,pb,pc,c,a){
+  if(!pa||!pb||!pc) return;
+  prims.push({t:1,p:[pa,pb,pc],c:c,d:(pa.depth+pb.depth+pc.depth)/3,a:(a===undefined?1:a)});
+}
+function label(p,txt,c,font,a){
+  if(!p) return;
+  prims.push({t:2,txt:txt,c:c,d:p.depth,x:p.x,y:p.y,a:(a===undefined?1:a),
+              font:font||'700 15px system-ui,-apple-system,"PingFang SC",sans-serif'});
+}
+/* 圆锥箭头 */
+function cone(tip, dirv, length, radius, color, alpha){
+  const dv=nrm(dirv);
+  const base=sub(tip,mul(dv,length));
+  let up=[0,1,0];
+  if(Math.abs(dot(dv,up))>0.94) up=[1,0,0];
+  const u1=nrm(cross(dv,up)), u2=cross(dv,u1);
+  const K=12, bp=[];
+  for(let i=0;i<K;i++){
+    const a=i/K*Math.PI*2;
+    bp.push(add(base, add(mul(u1,Math.cos(a)*radius), mul(u2,Math.sin(a)*radius))));
+  }
+  const pt=project(tip);
+  for(let i=0;i<K;i++){
+    tri(pt, project(bp[i]), project(bp[(i+1)%K]), color, alpha);
+  }
+}
+/* --- 屏幕空间的实心箭头（三个动画共用） --------------------------------
+   做法：把「箭尖」和「箭尾」两个三维点各自投影到屏幕，得到一条屏幕上的投影线，
+   再沿这条投影方向在屏幕坐标里张开箭头三角形。
+   为什么不画在 3D 里：三角形一旦躺在子午面（或任何切平面）内，
+   斜视时那个平面被压扁，箭头在屏幕上就成了一道斜斜的「刺」——
+   既不像箭，看上去也不指向线上，这就是「箭头标得不好不准确」的根源。
+   屏幕空间画法保证箭头的指向 = B 在屏幕上的投影方向：任何视角都精确指在线上，
+   形状也永远是标准箭头；正对视线（投影长度 < 8px）时干脆不画，
+   免得退化成一个小点误导人。                                            */
+function vecArrow(pos, tv, len, color, alpha, dAdj){
+  const T=nrm(tv);
+  const pt=project(pos), pb=project(sub(pos, mul(T, len)));
+  if(!pt||!pb) return;
+  const dx=pt.x-pb.x, dy=pt.y-pb.y, L=Math.hypot(dx,dy);
+  /* 太短就别画：① 绝对长度不足 8px；
+     ② 相对长度不足（L 比"正对屏幕时应有的长度"还小很多）—— 磁感线几乎顺着视线走，
+        这时屏幕上的箭头方向已经没有意义（侧视同心圆会在两端冒出一排"沿切线"的假箭头）。 */
+  const wl=len*(pt.s+pb.s)/2;
+  if(L<8 || L<0.32*wl) return;
+  const ux=dx/L, uy=dy/L;                     /* 屏幕上 B 的方向 */
+  /* 箭头形态：细长比 长:宽 ≈ 1 : 0.84 偏瘦一点，方向才读得准
+     （胖而钝的三角看着就像"歪"的）；长度全部由屏幕投影长度 L 定，
+     所以世界长度短的箭头（曲率大的地方自动收短）在屏幕上也同步变小。 */
+  const HL=Math.min(L*0.60, Math.max(6.0, len*pt.s*0.42));  /* 头部长度（像素） */
+  const WD=HL*0.42;                           /* 头部半宽 */
+  const d=pt.depth-(dAdj||0);
+  const P=(x,y)=>({x:x,y:y,s:pt.s,depth:d});
+  const tip  =P(pt.x, pt.y);
+  const b1   =P(pt.x-ux*HL-uy*WD, pt.y-uy*HL+ux*WD);
+  const b2   =P(pt.x-ux*HL+uy*WD, pt.y-uy*HL-ux*WD);
+  const notch=P(pt.x-ux*HL*0.40, pt.y-uy*HL*0.40);          /* 尾部内凹 = 标准箭头轮廓 */
+  tri(tip,b1,notch,color,alpha);
+  tri(tip,notch,b2,color,alpha);
+  seg(P(pt.x-ux*L, pt.y-uy*L), notch, 1.9/((pt.s+pb.s)/2), color, {alpha:alpha});
+}
+
+/* ============================ 状态 ============================ */
+const st={ dir:-1, I:1.0, showHand:true, showField:true, playing:true, t:0 };
+const SR=0.80;                                   /* 螺线管半径 */
+const SL=2.00;                                   /* 螺线管长度（长径比≈2.5，与课本插图的短粗线圈一致） */
+const NT=6;                                      /* 匝数 */
+const TUBE=0.066;                                /* 导线视觉半径 */
+const HA0=-Math.PI/2;                            /* 螺旋起始相位（几何固定，只有电流方向会变） */
+const YHAND=-0.18;                               /* 右手握在管上的高度 */
+/* ============================================================================
+   磁感线绘制（环形电流 / 通电螺线管共用）
+   FL 是子午面 (r,y) 上的闭合曲线族（构建期用椭圆积分场 + RK4 沿场积分得到），
+   每条为 [[r,y],...]，点的顺序就是 B 的方向（对应 d=+1）。
+   ---------------------------------------------------------------------------
+   ① 方向：沿 B 方向的实心箭头（圆点没有方向性）。
+      **箭头不必动**（用户明确说：只要方向准就行），所以位置是固定的。
+      关键是「准」——箭头的方向取它自己跨过的那一小段**弦**的方向：
+        · 箭尖 P(s) 与箭尾 P(s−ℓ) 都精确落在折线上，两端不会飘出去；
+        · 用切线画（方向对、位置从 P 往后退）箭尾会跑到曲线外侧，曲率越大飘得越狠，
+          这正是"箭头有点歪"的根源；
+        · 中间只差一个矢高，按「中间点离弦的最大偏离 ≤ dmax」自动收短箭头
+          （贴导线那些绕着导线转的小圈，箭头就自动变得很短很小）。
+   ② 强弱：磁感线的疏密表示磁感应强度。构建期预生成一整族**稠密**的磁感线（11 条），
+      运行时按 I 取子集（0.2A→2 条、1.0A→6 条、2.0A→11 条），线宽也随 I 变 ——
+      拖动「电流强度」滑块时磁场"看得见地"变密。
+   ③ 纵截面的「穿进 / 穿出纸面」记号见 buildTurnMarks（环形电流、螺线管共用）。
+   ========================================================================== */
+const FL=([[[0.544,0],[0.545,0.12],[0.549,0.24],[0.555,0.36],[0.565,0.48],[0.579,0.599],[0.6,0.718],[0.631,0.834],[0.677,0.945],[0.75,1.039],[0.857,1.093],[0.974,1.12],[1.093,1.133],[1.213,1.138],[1.333,1.133],[1.453,1.12],[1.571,1.099],[1.687,1.069],[1.801,1.03],[1.911,0.983],[2.018,0.927],[2.118,0.862],[2.213,0.787],[2.3,0.704],[2.378,0.613],[2.445,0.514],[2.502,0.408],[2.545,0.296],[2.574,0.179],[2.589,0.06],[2.589,-0.06],[2.574,-0.179],[2.545,-0.296],[2.502,-0.408],[2.445,-0.514],[2.378,-0.613],[2.3,-0.704],[2.213,-0.787],[2.118,-0.862],[2.018,-0.927],[1.911,-0.983],[1.801,-1.03],[1.687,-1.069],[1.571,-1.099],[1.453,-1.12],[1.333,-1.133],[1.213,-1.138],[1.093,-1.133],[0.974,-1.12],[0.857,-1.093],[0.75,-1.039],[0.677,-0.945],[0.631,-0.834],[0.6,-0.718],[0.579,-0.599],[0.565,-0.48],[0.555,-0.36],[0.549,-0.24],[0.545,-0.12]],[[0.567,0],[0.568,0.12],[0.572,0.239],[0.578,0.359],[0.588,0.478],[0.603,0.596],[0.624,0.714],[0.654,0.83],[0.701,0.94],[0.779,1.028],[0.892,1.062],[1.012,1.072],[1.131,1.07],[1.25,1.059],[1.368,1.04],[1.484,1.011],[1.598,0.974],[1.708,0.928],[1.814,0.872],[1.914,0.807],[2.008,0.733],[2.093,0.649],[2.169,0.557],[2.234,0.457],[2.287,0.349],[2.325,0.236],[2.349,0.119],[2.357,0],[2.349,-0.119],[2.325,-0.236],[2.287,-0.349],[2.234,-0.457],[2.169,-0.557],[2.093,-0.649],[2.008,-0.733],[1.914,-0.807],[1.814,-0.872],[1.708,-0.928],[1.598,-0.974],[1.484,-1.011],[1.368,-1.04],[1.25,-1.059],[1.131,-1.07],[1.012,-1.072],[0.892,-1.062],[0.779,-1.028],[0.701,-0.94],[0.654,-0.83],[0.624,-0.714],[0.603,-0.596],[0.588,-0.478],[0.578,-0.359],[0.572,-0.239],[0.568,-0.12]],[[0.59,0],[0.592,0.12],[0.595,0.241],[0.602,0.361],[0.612,0.481],[0.627,0.601],[0.649,0.719],[0.681,0.835],[0.73,0.945],[0.82,1.018],[0.94,1.023],[1.06,1.014],[1.179,0.995],[1.296,0.967],[1.41,0.93],[1.522,0.884],[1.628,0.828],[1.729,0.763],[1.823,0.687],[1.908,0.602],[1.983,0.508],[2.045,0.405],[2.094,0.295],[2.127,0.179],[2.145,0.06],[2.145,-0.06],[2.127,-0.179],[2.094,-0.295],[2.045,-0.405],[1.983,-0.508],[1.908,-0.602],[1.823,-0.687],[1.729,-0.763],[1.628,-0.828],[1.522,-0.884],[1.41,-0.93],[1.296,-0.967],[1.179,-0.995],[1.06,-1.014],[0.94,-1.023],[0.82,-1.018],[0.73,-0.945],[0.681,-0.835],[0.649,-0.719],[0.627,-0.601],[0.612,-0.481],[0.602,-0.361],[0.595,-0.241],[0.592,-0.12]],[[0.614,0],[0.615,0.12],[0.619,0.241],[0.625,0.361],[0.635,0.481],[0.651,0.6],[0.673,0.718],[0.705,0.834],[0.754,0.944],[0.851,0.991],[0.97,0.972],[1.087,0.946],[1.203,0.911],[1.315,0.868],[1.423,0.815],[1.525,0.752],[1.621,0.679],[1.708,0.596],[1.786,0.504],[1.851,0.403],[1.901,0.294],[1.936,0.179],[1.954,0.06],[1.954,-0.06],[1.936,-0.179],[1.901,-0.294],[1.851,-0.403],[1.786,-0.504],[1.708,-0.596],[1.621,-0.679],[1.525,-0.752],[1.423,-0.815],[1.315,-0.868],[1.203,-0.911],[1.087,-0.946],[0.97,-0.972],[0.851,-0.991],[0.754,-0.944],[0.705,-0.834],[0.673,-0.718],[0.651,-0.6],[0.635,-0.481],[0.625,-0.361],[0.619,-0.241],[0.615,-0.12]],[[0.637,0],[0.638,0.119],[0.642,0.239],[0.648,0.358],[0.659,0.477],[0.673,0.595],[0.695,0.713],[0.727,0.828],[0.774,0.937],[0.862,0.955],[0.975,0.919],[1.088,0.878],[1.197,0.83],[1.302,0.773],[1.401,0.706],[1.493,0.63],[1.576,0.545],[1.648,0.45],[1.707,0.346],[1.751,0.235],[1.778,0.119],[1.787,0],[1.778,-0.119],[1.751,-0.235],[1.707,-0.346],[1.648,-0.45],[1.576,-0.545],[1.493,-0.631],[1.401,-0.707],[1.301,-0.773],[1.196,-0.83],[1.087,-0.878],[0.975,-0.919],[0.861,-0.955],[0.774,-0.937],[0.726,-0.828],[0.695,-0.713],[0.673,-0.595],[0.658,-0.477],[0.648,-0.358],[0.641,-0.239],[0.638,-0.119]],[[0.66,0],[0.661,0.12],[0.665,0.241],[0.672,0.361],[0.682,0.481],[0.698,0.6],[0.72,0.718],[0.752,0.834],[0.805,0.937],[0.913,0.886],[1.021,0.833],[1.126,0.774],[1.226,0.707],[1.32,0.632],[1.405,0.546],[1.479,0.452],[1.54,0.348],[1.585,0.237],[1.614,0.12],[1.623,0],[1.614,-0.12],[1.585,-0.237],[1.54,-0.348],[1.479,-0.452],[1.405,-0.546],[1.32,-0.632],[1.226,-0.707],[1.126,-0.774],[1.021,-0.833],[0.913,-0.886],[0.805,-0.937],[0.752,-0.834],[0.72,-0.718],[0.698,-0.6],[0.682,-0.481],[0.672,-0.361],[0.665,-0.241],[0.661,-0.12]],[[0.683,0],[0.684,0.119],[0.688,0.238],[0.695,0.356],[0.705,0.475],[0.72,0.593],[0.741,0.71],[0.772,0.825],[0.841,0.871],[0.941,0.806],[1.039,0.739],[1.133,0.666],[1.22,0.584],[1.297,0.495],[1.364,0.396],[1.416,0.29],[1.453,0.177],[1.472,0.059],[1.472,-0.059],[1.453,-0.177],[1.416,-0.29],[1.364,-0.396],[1.297,-0.495],[1.22,-0.584],[1.133,-0.666],[1.039,-0.739],[0.941,-0.806],[0.841,-0.871],[0.772,-0.825],[0.741,-0.71],[0.72,-0.593],[0.705,-0.475],[0.695,-0.356],[0.688,-0.238],[0.684,-0.119]],[[0.706,0],[0.708,0.121],[0.712,0.242],[0.719,0.364],[0.729,0.484],[0.745,0.605],[0.767,0.724],[0.802,0.835],[0.896,0.761],[0.988,0.682],[1.074,0.597],[1.153,0.504],[1.22,0.404],[1.274,0.295],[1.312,0.18],[1.331,0.061],[1.331,-0.061],[1.312,-0.18],[1.274,-0.295],[1.22,-0.404],[1.153,-0.504],[1.074,-0.597],[0.988,-0.682],[0.896,-0.761],[0.802,-0.835],[0.767,-0.724],[0.745,-0.605],[0.729,-0.484],[0.718,-0.364],[0.711,-0.242],[0.708,-0.121]],[[0.73,0],[0.731,0.121],[0.735,0.241],[0.742,0.361],[0.752,0.482],[0.768,0.601],[0.788,0.72],[0.871,0.69],[0.952,0.6],[1.026,0.505],[1.09,0.403],[1.142,0.294],[1.178,0.179],[1.197,0.06],[1.197,-0.06],[1.178,-0.179],[1.142,-0.294],[1.09,-0.403],[1.026,-0.505],[0.952,-0.6],[0.871,-0.69],[0.788,-0.72],[0.768,-0.601],[0.752,-0.482],[0.742,-0.361],[0.735,-0.241],[0.731,-0.121]],[[0.753,0],[0.754,0.118],[0.758,0.236],[0.764,0.354],[0.774,0.472],[0.79,0.589],[0.844,0.598],[0.911,0.501],[0.969,0.398],[1.016,0.289],[1.049,0.176],[1.066,0.059],[1.066,-0.059],[1.049,-0.176],[1.016,-0.289],[0.969,-0.398],[0.911,-0.501],[0.844,-0.598],[0.79,-0.589],[0.774,-0.472],[0.764,-0.354],[0.758,-0.236],[0.754,-0.118]],[[0.776,0],[0.777,0.102],[0.78,0.203],[0.785,0.305],[0.794,0.404],[0.81,0.484],[0.852,0.394],[0.889,0.299],[0.918,0.202],[0.935,0.101],[0.941,0],[0.935,-0.102],[0.918,-0.202],[0.889,-0.299],[0.852,-0.394],[0.81,-0.484],[0.793,-0.405],[0.785,-0.305],[0.779,-0.203],[0.777,-0.102]]]);
+/* 方位角平面：
+   4 个（0/90/180/270°）——侧视时只剩 2 个平面可见（另 2 个退化成轴线），画面最干净，
+   但立体图里 4 个方向各自孤零零一片，像四叶草，环内环外连不成一族。
+   8 个 —— 立体图上是连续绕环的一族回转面，内外的关系一眼看懂。 */
+const AZ4=[0,Math.PI/2,Math.PI,Math.PI*1.5];
+const AZ6=[0,1,2,3,4,5].map(k=>k*Math.PI/3);
+const AZ8=[0,1,2,3,4,5,6,7].map(k=>k*Math.PI/4);
+const AZ=AZ4;
+
+/* 沿轴看（俯视/仰视）时磁感线会缩成一堆同心圆，反而误导，所以淡出 */
+function fieldFade(){
+  const sp=Math.abs(Math.sin(cam.pitch));
+  return 1-Math.max(0,Math.min(1,(sp-0.60)/0.32));  /* 37° 起淡出、66° 完全隐去，与 ⊗/⊙ 接力 */
+}
+
+/* 管内的那一截磁感线：螺线管的管壁是绕线，管内部分若按真实遮挡会被线圈压住，
+   「管内平行于轴」这个关键结论就看不见了。所以把这些点的深度人为提前，
+   画成教材剖面图的样子（导线不遮挡管内磁场）。r/y 是管身范围。 */
+function tubeDepth(pos, opt){
+  const x=opt.xray;
+  if(!x) return 0;
+  return (Math.hypot(pos[0],pos[2])<x.r && Math.abs(pos[1])<x.y) ? x.d : 0;
+}
+
+/* ---- 箭头跨过的那一小段：返回箭尾点 [r,y]，或者 null（这一段太弯，放不下箭头） ----
+   从箭尖往回沿折线走，直到弧长够 ℓ —— 但每走一步都查两件事：
+     ① 已经走过的点离弦 (箭尾→箭尖) 的最大偏离 > dmax      → 停在上一步（箭尾会飘出线外）
+     ② 累计的折线转角 > TURNMAX（或单步转角 > 45°，那是数据里的一个尖刺）
+                                                          → 停在上一步（弦方向会读歪）
+   于是箭头永远贴着画出来的线，方向也永远读得出来。 */
+function arrowTail(loop, n, i, f, ell, dmax, TURNMAX){
+  const i2=(i+1)%n;
+  const sx=loop[i2][0]-loop[i][0], sy=loop[i2][1]-loop[i][1];
+  const rx=loop[i][0]+sx*f, ry=loop[i][1]+sy*f;      /* 箭尖（段内插值） */
+  let j=i, arc=f*Math.hypot(sx,sy), best=null, turn=0;
+  let px=null, py=0;
+  const seen=[i];
+  for(let g=0; g<90 && arc<ell; g++){
+    const k=(j-1+n)%n;
+    const dx=loop[j][0]-loop[k][0], dy=loop[j][1]-loop[k][1];
+    const d=Math.hypot(dx,dy);
+    if(d<1e-9){ j=k; continue; }
+    if(px!==null){
+      const t=Math.acos(Math.max(-1,Math.min(1,(dx*px+dy*py)/d)))*180/Math.PI;
+      if(t>45 || turn+t>TURNMAX) break;               /* 尖刺 / 弯得太狠：不跨过去 */
+      turn+=t;
+    }
+    px=dx/d; py=dy/d;
+    arc+=d; j=k; seen.push(j);
+    const tx=loop[j][0], ty=loop[j][1];              /* 候选箭尾 */
+    const cx=rx-tx, cy=ry-ty, cl=Math.hypot(cx,cy);
+    if(cl<1e-6) continue;
+    let dev=0;
+    for(let q=0;q<seen.length;q++){
+      const p=loop[seen[q]];
+      const e=Math.abs((p[0]-tx)*cy-(p[1]-ty)*cx)/cl;
+      if(e>dev) dev=e;
+    }
+    if(dev>dmax) break;                              /* 再退就歪出线了 */
+    best=[tx,ty];
+  }
+  return best;
+}
+
+function buildFieldLines(d,I,t,opt){
+  const fade=fieldFade();
+  if(fade<0.03) return;
+  opt=opt||{};
+  const NCUR=FL.length;
+  if(!NCUR) return;
+  /* ---- 电流 → 磁感线条数（疏密表示强弱）---- */
+  const NSEL=Math.max(2, Math.min(NCUR, Math.round(2+(I-0.2)/1.8*(NCUR-2))));
+  const pick=[];
+  for(let j=0;j<NSEL;j++){
+    const k=NSEL<2 ? NCUR-1 : Math.round(j*(NCUR-1)/(NSEL-1));
+    if(pick.indexOf(k)<0) pick.push(k);
+  }
+  /* 线宽 / 箭头随 I 的轻微变化（主要信号是条数） */
+  const WMUL=0.88+0.26*I, AMUL=0.82+0.22*I;
+
+  const W=(opt.w||0.018)*WMUL, col=opt.col||'#5aa6ee', s=(-d)>0?1:-1;
+  const ACOL=opt.acol||'#1d4ed8';
+  const KMAX=opt.kmax||4;
+  const AZS=opt.az||AZ;
+  const KPT=opt.kpt||9;            /* 每个方位角平面上总共摆几支箭头（按周长分摊到各条线） */
+  const ELL=(opt.alen!==undefined?opt.alen:(opt.asize||0.13)*3.6)*AMUL;   /* 箭头世界长度 */
+  const DMAX=opt.dmax||0.020;      /* 箭头中间允许离开线的最大距离（世界单位） */
+  const TURN=opt.turnmax||30;      /* 箭头跨过的折线总转角上限（度）—— 方向别读歪 */
+  const MINL=opt.minlen!==undefined?opt.minlen:Math.max(0.075,ELL*0.30);
+
+  /* 每条选中曲线的弧长表 + 周长：箭头按弧长均匀布置，箭头数按周长分配 */
+  const meta=pick.map(k=>{
+    const loop=s>0?FL[k]:FL[k].slice().reverse();
+    const n=loop.length, cum=[0];
+    for(let i=1;i<n;i++) cum[i]=cum[i-1]+Math.hypot(loop[i][0]-loop[i-1][0],loop[i][1]-loop[i-1][1]);
+    const per=Math.max(1e-3, cum[n-1]+Math.hypot(loop[0][0]-loop[n-1][0],loop[0][1]-loop[n-1][1]));
+    return {k:k, loop:loop, n:n, cum:cum, per:per};
+  });
+  const totPer=meta.reduce((z,m)=>z+m.per,0);
+  meta.forEach(m=>{ m.K=Math.max(1, Math.min(KMAX, Math.round(KPT*m.per/totPer))); });
+
+  meta.forEach((m,fi)=>{
+    const loop=m.loop, n=m.n, cum=m.cum, per=m.per, K=m.K;
+    /* 颜色/透明度按它在族里的位置：靠内（回环大、穿过环孔）更实，靠外稍淡 */
+    const q=NCUR<2?0:m.k/(NCUR-1);
+    const a=Math.min(0.96,(opt.a0||0.90)-(opt.da||0.30)*q)*fade;
+    if(a<0.05) return;
+    /* 箭头位置：固定（不动画）。各条线、各个平面错开相位，免得在轴线附近叠成一撮。 */
+    const ph0=((fi*0.618+0.17)%1+1)%1;
+
+    for(let mi=0;mi<AZS.length;mi++){
+      const ca=Math.cos(AZS[mi]), sa=Math.sin(AZS[mi]);
+      /* e = 这个方位角平面「正对相机」的程度：1 完全展开、0 与视线平行（压成一条线）。
+         压扁的平面淡出，画面才有主次 —— 否则纵截面视图里会叠出一堆中间尺度的圈。 */
+      const e=Math.abs(Math.cos(AZS[mi]-cam.yaw));
+      const aw=a*(0.18+0.82*e);
+      /* 箭头另外再乘一道：平面被压扁时箭头的指向已经被压得看不出来，
+         摆上去只是在环两端堆成一撮，所以让它平滑淡出（e 越小越淡）。 */
+      const iaw=aw*Math.min(1,Math.max(0,(e-0.40)/0.35));
+      const pj=new Array(n);
+      for(let i=0;i<n;i++){
+        const p=loop[i], pos=[p[0]*ca,p[1],p[0]*sa];
+        const q2=project(pos);
+        if(q2){ const kk=tubeDepth(pos,opt); if(kk) q2.depth-=kk; }
+        pj[i]=q2;
+      }
+      for(let i=0;i<n;i++) seg(pj[i],pj[(i+1)%n],W,col,{alpha:aw});
+      if(iaw<0.06) continue;
+      const ph=((ph0 + mi*0.137)%1+1)%1;
+      for(let k=0;k<K;k++){
+        const target=((((k/K+ph)%1)+1)%1)*per;
+        let i=0; while(i<n-1 && cum[i+1]<target) i++;
+        const i2=(i+1)%n;
+        const dl=(i2===0 ? (per-cum[n-1]) : (cum[i2]-cum[i]));
+        const f=Math.min(1,Math.max(0,(target-cum[i])/Math.max(dl,1e-6)));
+        const r=loop[i][0]+(loop[i2][0]-loop[i][0])*f;
+        const y=loop[i][1]+(loop[i2][1]-loop[i][1])*f;
+        /* 管内（r 小、|y| 又在管身范围内）不摆箭头：那里它会和导线圈叠在一起，
+           在画面上变成一撮杂点；管内的方向交给轴上的大箭头 B 表达。 */
+        if(opt.rIn!==undefined && r<opt.rIn && Math.abs(y)<(opt.yIn||1e9)) continue;
+        /* 离导线太近也不摆：贴导线那一圈磁感线本身就是绕导线的小圈，
+           箭头会压在导线上，看着既乱又像指错了方向（opt.avoid 由场景给）。 */
+        if(opt.avoid && opt.avoid(r,y)) continue;
+        /* 箭尾：沿折线退 ℓ（途中离弦超过 dmax、或转角太大就收短）。太短就不摆。 */
+        const tail=arrowTail(loop,n,i,f,ELL,DMAX,TURN);
+        if(!tail) continue;
+        let dr=r-tail[0], dy=y-tail[1];
+        const ml=Math.hypot(dr,dy);
+        if(ml<MINL) continue;
+        dr/=ml; dy/=ml;
+        const apos=[r*ca, y, r*sa];
+        /* 方向 = 弦方向（箭尾→箭尖），长度 = 弦长：两端都落在线里 */
+        vecArrow(apos, [dr*ca, dy, dr*sa], ml, ACOL, iaw, tubeDepth(apos,opt));
+      }
+    }
+  });
+}
+
+/* ============================================================================
+   纵截面的「电流穿进 / 穿出纸面」记号（环形电流、通电螺线管共用）
+   ---------------------------------------------------------------------------
+   导线绕着轴跑，总有那么两点：切向**正对着镜头**。那里导线在屏幕上缩成一个点，
+   课本就在这个位置画 ⊙ / ⊗ —— 电流流出纸面画 ⊙、流入纸面画 ⊗。
+   这是截面图里唯一不含糊的方向表达：别处导线投影成一条线，前半圈与后半圈完全重合、
+   方向却相反，同一条线上摆两支反向箭头，看着就是"标歪了"。
+   · 位置不写死方位角：逐匝扫「切向与视线方向的夹角」，取 |cos| 最大的两处
+     （一处朝相机、一处背相机）；
+   · 记号跟着视线走，于是**竖直放时落在管子左右两侧，把管子横放时落在管子上下两侧**
+     —— 正是课本剖面图「上缘一排 ⊗、下缘一排 ⊙」的样子；
+   · 只有接近正侧视时才出现（edge=|视线·轴| 越小越正），沿轴看（俯视/仰视）时
+     切向与视线垂直、根本扫不出记号，自动隐去，那里交给环内/环外两圈符号。
+   at(u) 把参数 u∈[0,1] 映射到世界坐标；turns 是圈数；r0 是记号的世界半径。
+   ========================================================================== */
+function buildTurnMarks(d, opt){
+  const at=opt.at, NT=Math.max(1,opt.turns||1);
+  const ax=opt.axis||[0,1,0];
+  /* 「正侧视」程度：视线与线圈轴线的夹角（0 = 正侧视）。横放只是把相机绕视线滚了 90°，
+     视线方向不变，所以记号照样在、只是跟着挪到管子上下两侧。 */
+  const edge=Math.abs(BZ[0]*ax[0]+BZ[1]*ax[1]+BZ[2]*ax[2]);
+  const e0=opt.edge0!==undefined?opt.edge0:0.20;    /* edge ≤ e0：完全出现 */
+  const e1=opt.edge1!==undefined?opt.edge1:0.30;    /* edge ≥ e1：完全隐去 */
+  let sv=(e1-edge)/(e1-e0);
+  sv=sv<0?0:(sv>1?1:sv); sv=sv*sv*(3-2*sv);
+  if(sv<0.03) return 0;
+  const S=opt.samples||240, R0=opt.r0||0.16;   /* 每匝采样数：240 时峰值定位误差 < 2px */
+  const h=1e-3/NT;                                  /* 中心差分步长（参数） */
+  let placed=0;
+  for(let k=0;k<NT;k++){
+    const u0=k/NT, vs=[], us=[];
+    for(let i=0;i<S;i++){
+      const u=u0+(i+0.5)/S/NT;
+      const p1=at(u+h), p0=at(u-h);
+      const tx=p1[0]-p0[0], ty=p1[1]-p0[1], tz=p1[2]-p0[2];
+      const L=Math.hypot(tx,ty,tz)||1;
+      vs.push((tx*BZ[0]+ty*BZ[1]+tz*BZ[2])/L);      /* 切向与视线的夹角余弦 */
+      us.push(u);
+    }
+    /* 一匝里有两处（正对相机 / 背对相机）：先取全局最大，再到对面半圈里取最大 */
+    let i1=0; for(let i=1;i<S;i++) if(Math.abs(vs[i])>Math.abs(vs[i1])) i1=i;
+    const off=Math.round(S*0.30);
+    let i2=-1;
+    for(let i=0;i<S;i++){
+      const dd=Math.min((i-i1+S)%S,(i1-i+S)%S);
+      if(dd<off) continue;
+      if(i2<0||Math.abs(vs[i])>Math.abs(vs[i2])) i2=i;
+    }
+    [i1,i2].forEach(i=>{
+      if(i<0) return;
+      const v=vs[i];
+      if(Math.abs(v)<0.62) return;                  /* 切向没正对镜头：这处读不出"穿进/穿出" */
+      const pr=project(at(us[i])); if(!pr) return;
+      /* 电流方向 = d·(参数增大方向的切向)；与视线同向 = 远离你 = 穿进纸面 = ⊗ */
+      prims.push({t:5, d:-2e6, a:sv*0.97, x:pr.x, y:pr.y, s:pr.s,
+                  away:(d*v)>0, style:'dot', r0:R0});
+      placed++;
+    });
+  }
+  /* 底部图例：只在接近正侧视时出现（与记号同进退） */
+  if(sv>0.45 && opt.note)
+    prims.push({t:5, d:-3e6, a:sv*0.98, x:W/2, y:H-116, s:1, style:'cnote', txt:opt.note});
+  return placed;
+}
+
+
+/* ============================ 场景构建 ============================ */
+function buildScene(){
+  prims.length=0;
+  const d=st.dir, I=st.I, tt=st.t;
+  if(st.showField) buildField(d,I,tt);
+  buildCoil(d,I,tt);
+  /* 纵截面：每一匝「正对镜头」处（电流穿进 / 穿出纸面）画 ⊗/⊙ —— 见 buildTurnMarks。
+     竖直放时这一列记号落在管子的左右两侧；把管子横放，记号就跟到管子的上下两侧，
+     与课本剖面图「上缘一排 ⊗、下缘一排 ⊙」一致。 */
+  buildTurnMarks(d,{ at:helixPt, turns:NT, r0:0.115,
+                     note:'纵截面：⊙ 电流流出纸面（朝向你）　⊗ 电流流入纸面（远离你）' });
+  buildLeads();
+  buildAxisArrow(d);
+  if(st.showHand)  buildHand(-d);        /* -d = 「B 是否沿 +y」，贴图拇指朝上即沿 +y */
+  buildAxisSign(d);
+}
+
+/* 螺旋线上的点：u∈[0,1] 从下端到上端 */
+function helixPt(u){
+  const y=-SL/2+SL*u;
+  const a=HA0+2*Math.PI*NT*u;
+  return [SR*Math.cos(a), y, SR*Math.sin(a)];
+}
+
+/* --- 绕组的可见性：绕组缠在圆管上，背对相机的那半圈被管体挡住 ——
+       教材的画法就是「看得见的前半圈画实线、看不见的后半圈画虚线」。
+       判据：该点的径向（垂直于管轴）与「指向相机」的方向的径向分量点积，
+       > 0 即在近侧。取 ±0.30 之间平滑过渡，轮廓处不会硬跳。 --- */
+function coilVis(P){
+  let nx=-BZ[0], nz=-BZ[2];                 /* BZ 是相机前向，取反 = 指向相机 */
+  const nl=Math.hypot(nx,nz);
+  if(nl<1e-4){ nx=0; nz=1; } else { nx/=nl; nz/=nl; }
+  const tt=(P[0]*nx+P[2]*nz)/SR;
+  let u=(tt+0.30)/0.60; u=u<0?0:(u>1?1:u);
+  return u*u*(3-2*u);                       /* 0 = 完全被挡，1 = 正对相机 */
+}
+
+/* --- 螺线管本体 + 流动的电流 --- */
+function buildCoil(d,I,t){
+  const SEG=Math.round(NT*34), pts=[], vis=[];
+  for(let i=0;i<=SEG;i++){
+    const P=helixPt(i/SEG);
+    pts.push(project(P)); vis.push(coilVis(P));
+  }
+  /* 沿轴看（俯视/仰视）时，各匝绕组的投影几乎重合，前后半圈的虚实只会把圆环打碎成一圈噪点，
+     那个角度退回实线（与右手、轴符号的接力时刻一致）。 */
+  const mix=1-endOnVis();
+  let arc=0;                                                /* 屏幕累积弧长：虚线的相位靠它跨段续上 */
+  for(let i=0;i<SEG;i++){
+    const A=pts[i], B=pts[i+1];
+    const v=1-mix*(1-(vis[i]+vis[i+1])*0.5);
+    if(v>0.985){                                            /* 近侧：正常实线 */
+      seg(A,B,TUBE*2.6,'rgba(71,85,105,.085)');             /* 发光外圈 */
+      seg(A,B,TUBE*1.42,SLATE);
+      seg(A,B,TUBE*0.50,SLATE_L,{alpha:.5});
+    }else{                                                  /* 被管挡住的一半：短划线 + 淡 */
+      seg(A,B,TUBE*1.16,'#5c6b80',{dash:1, alpha:0.40+0.52*v, ph:arc});
+    }
+    arc+=Math.hypot(B.x-A.x,B.y-A.y);
+  }
+  /* 电流粒子：沿螺旋线流动，方向由 d 决定（背面的粒子被管挡住，不画） */
+  const K=Math.round(NT*3), flow=(((t*I*0.15*d)%1)+1)%1;
+  for(let k=0;k<K;k++){
+    const u=(((k/K+flow)%1)+1)%1;
+    const u2=Math.max(0,Math.min(1,u+d*0.014));
+    const v=1-mix*(1-coilVis(helixPt(u)));
+    if(v<0.30) continue;
+    seg(project(helixPt(u)), project(helixPt(u2)), TUBE*0.95, AMBER_L,{alpha:0.45+0.55*v});
+  }
+  /* 电流方向大箭头：放在管的中段，且挑当前视角下既看得见、切向又不正对视线的那一处
+     （固定在某个相位，转半圈就藏到管背面去了；只挑「最可见」的话，
+       该处切向恰好朝着相机，锥形箭头会缩成一个圆盘，方向反而读不出来） */
+  let uc=0.315, best=-1, tv=[0,1,0];
+  for(let k=0;k<=32;k++){
+    const uu=0.20+0.26*k/32;
+    const q0=helixPt(uu), q1=helixPt(uu+d*0.030), w=nrm(sub(q1,q0));
+    const face=Math.abs(w[0]*BZ[0]+w[1]*BZ[1]+w[2]*BZ[2]);   /* 1 = 切向正对视线 */
+    const sc=(0.30+0.70*coilVis(q0))*(1-face*0.94);
+    if(sc>best){ best=sc; uc=uu; tv=w; }
+  }
+  const p0=helixPt(uc), av=Math.max(0.55,best);
+  /* 用屏幕空间箭头（与磁感线同一套画法）：锥体在侧视时会被压成一个圆盘/一撮条纹，
+     方向反而读不出来 —— 而这里要表达的恰恰是「电流沿导线流向哪一边」。
+     深度前置：沿轴看时它会被更近的那几匝压住（屏幕上只剩一截小竖条），
+     它是标注、不是实体，理应画在绕组前面。 */
+  vecArrow(p0,tv,0.30,AMBER,0.95*av,1.15);
+  const rad=[Math.cos(HA0+2*Math.PI*NT*uc),0,Math.sin(HA0+2*Math.PI*NT*uc)];
+  label(project(add(p0,mul(rad,0.46))),'I','#d97706',
+        'italic 700 19px Georgia,"Times New Roman",serif',0.95*av);
+}
+
+/* --- 两端引线（示意接入电源） --- */
+function buildLeads(){
+  [0,1].forEach(u=>{
+    const p=helixPt(u);
+    const rad=[p[0]/SR,0,p[2]/SR];
+    const q=add(p, mul(rad,0.95));
+    seg(project(p), project(q), TUBE*1.15, SLATE);
+  });
+}
+
+/* --- 磁感线：管内平行于轴，从管口出来后由外部绕回（沿场积分得到的闭合线） ---
+   条数由 field_draw 按电流 I 从预生成的稠密一族里取子集（I 越大越密）。 */
+function buildField(d,I,t){
+  /* 4 个方位角平面（管身本身是圆柱，4 个方向已经够读），配合按视线夹角的加权淡化：
+     与视线平行的那两个平面会自己淡掉，不会在管壁两侧堆出多余的线。
+     箭头固定不动；方向/长度由 field_draw 按折线弦长定（贴壁那些绕管口拐急弯的地方自动收短）。 */
+  buildFieldLines(d,I,t,{w:0.016, alen:0.27, dmax:0.018, kpt:6, kmax:3,
+                         rIn:0.79, yIn:1.02, xray:{ r:0.79, y:1.02, d:2.3 },
+                         /* 离绕组（半径 SR、长 SL 的圆柱面）0.24 以内不摆箭头：
+                            贴壁那几条线会与线圈叠在一起，箭头看着像指错方向 */
+                         avoid:function(r,y){
+                           return Math.abs(r-SR)<0.24 && Math.abs(y)<SL/2+0.20;
+                         }});
+}
+
+/* --- 轴线上的 B：箭头 + N/S 极 --- */
+function buildAxisArrow(d){
+  const s=(-d)>0?1:-1, L=SL/2+0.95, ka=1-endOnVis();
+  if(ka<0.02) return;
+  seg(project([0,-L*s,0]), project([0,L*s,0]), 0.026,'rgba(37,99,235,.85)',{alpha:ka});
+  cone([0,L*s,0],[0,s,0],0.30,0.15,'#2563eb',ka);
+  label(project([0.34,L*s+0.34,0]),'B','#1d4ed8','italic 700 19px Georgia,"Times New Roman",serif',ka);
+  label(project([-0.70,(SL/2+0.34)*s,0]),'N','#dc2626','700 18px system-ui,-apple-system,"PingFang SC",sans-serif',ka);
+  label(project([-0.70,-(SL/2+0.34)*s,0]),'S','#2563eb','700 18px system-ui,-apple-system,"PingFang SC",sans-serif',ka);
+}
+
+/* --- 沿轴看时的可见度：66° 起淡入（与右手隐去的时刻接力） --- */
+function endOnVis(){
+  const sp=Math.abs(Math.sin(cam.pitch));
+  return Math.max(0,Math.min(1,(sp-0.9135)/0.0646));
+}
+
+/* --- 沿轴看：管内、管外各 K 个方向符号 —— 数量一致、方位角一一对齐、方向相反，
+       管内进去几条、管外就绕回几条，画面上一眼可数。
+       （早先只在中心画一个大符号、管外画 6 个，成了「一个点对六个叉」。） --- */
+function buildAxisSign(d){
+  const v=endOnVis();
+  if(v<0.02) return;
+  const c=project([0,0,0]); if(!c) return;
+  const bUp=(-d)>0;
+  const away=(bUp? -Math.sin(cam.pitch) : Math.sin(cam.pitch))>0;
+  const K=4, PH=Math.PI/4;             /* 起点 45°：正下方落在两个符号中间，让开说明文字 */
+  const rI=SR*0.58, rO=SR*2.15, R0=0.17;   /* 外圈别贴着管壁，留出空隙才不会和线圈挤在一起 */
+  let maxY=c.y;                        /* 最下面那个符号的屏幕 y：说明文字放到它下面 */
+  for(let k=0;k<K;k++){
+    const a=PH+k/K*Math.PI*2, ca=Math.cos(a), sa=Math.sin(a);
+    const p1=project([rI*ca,0,rI*sa]);                 /* 管内：与 B 同向 */
+    if(p1) prims.push({t:5,d:-3e6,a:v,x:p1.x,y:p1.y,s:p1.s,away:away,style:'out',r0:R0,main:1});
+    const p2=project([rO*ca,0,rO*sa]);                 /* 管外：同方位、反向 */
+    if(p2){ prims.push({t:5,d:-3e6,a:v*0.96,x:p2.x,y:p2.y,s:p2.s,away:!away,style:'out',r0:R0});
+            if(p2.y>maxY) maxY=p2.y; }
+  }
+  /* 说明文字压在最低那个符号之下（按实际投影位置算，不写死倍数，
+     否则换个半径/相机就会有符号钻进文字框里） */
+  const fs=Math.max(15,Math.round(c.s*0.20));
+  const ty=maxY-c.y+R0*c.s+fs*1.15;   /* 让开符号本身的半径，光算中心还会压住 */
+  /* ⚠️ away 必须一起传：说明文字「指向纸面内/外」就是按它来的，
+     漏了它俯视/仰视的文字会永远写「纸面外」，跟同一屏的 ⊗/⊙ 正好说反。 */
+  prims.push({t:5,d:-3e6,a:v,x:c.x,y:c.y,s:c.s,style:'axis',
+              fs:fs, ty:ty, away:away,
+              tag:'管内', note:'管外一圈方向相反，一一对应'});
+}
+
+/* --- 右手：握住螺线管，四指顺着电流绕向，拇指指向 N 极 --- */
+function buildHand(curDir){
+  if(!handImg.complete || !handImg.naturalWidth) return;
+  const c=project([0,YHAND,0]);
+  if(!c) return;
+  const sh=handShape();
+  if(sh.fade<0.02) return;
+  prims.push({t:4,d:-1e6,a:sh.fade,dir:curDir,x:c.x,y:c.y,s:c.s,sx:sh.sx,sy:sh.sy});
+}
+/* --- 右手：内嵌插画贴图 -------------------------------------------------
+   手写 3D 管、矢量带状路径都做不出可信的形态（前者像弹簧，后者像手套），
+   改为内嵌一张抠好背景的手部插画：
+     · 按导线中点的投影定位，尺寸随透视缩放；
+     · 贴图内「握持点」的相对位置由实测标定（HPX/HPY）；
+     · 贴图原件是左手，绘制时镜像一次才是右手（同时让四指绕向与 B 一致）；
+     · 随视角做透视缩短，见 handShape()；
+     · 电流反向时绕视线轴转 180°，拇指始终指向电流方向、四指绕向同步反向。
+   贴图为 data URI，因此文件依旧离线可用、不依赖外部资源。
+   --------------------------------------------------------------------- */
+const HAND_SRC='data:image/webp;base64,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';
+const handImg=new Image();
+handImg.src=HAND_SRC;
+
+const HP=2.4, HPX=0.47, HPY=0.42;    /* 贴图边长（世界单位）、握持点的相对位置 */
+const HAND_YAW0=1.28;                  /* 贴图“正视方位角”：yaw 等于它时手形最完整 */
+const HAND_T=0.6;                     /* 绕到侧面时的最小横向比例（手有厚度，不会压成一条线） */
+
+/* 手随视角的透视缩短
+   纵向 = |cos(pitch)|，与导线在屏幕上的投影长度完全一致 —— 俯视时手跟着导线一起倒下去；
+   横向 = 方位角偏离正视方向的余弦 —— 绕导线转到侧面时手变窄、转回来又变宽；
+   接近沿导线看时手已无法辨识，渐隐（见 handShape().fade 与 endOnVis() 的接力区间）。*/
+function handShape(){
+  const co=Math.cos(cam.yaw-HAND_YAW0);
+  const sx=Math.sqrt(HAND_T*HAND_T+(1-HAND_T*HAND_T)*co*co);
+  const sy=Math.abs(Math.cos(cam.pitch));
+  /* 56° 之前完全不透明，66° 时已完全隐去 —— 必须早于 endOnVis() 的起点（同为 66°），
+     否则手与 ⊗/⊙ 符号会同时半透明地叠在一起。 */
+  return { sx:sx, sy:sy, fade:Math.max(0, Math.min(1, (sy-0.4067)/0.1525)) };
+}
+
+function buildHand(curDir){
+  if(!handImg.complete || !handImg.naturalWidth) return;
+  const c=project([0,0,0]);
+  if(!c) return;
+  const sh=handShape();
+  if(sh.fade<0.02) return;
+  prims.push({t:4, d:-1e6, a:sh.fade, dir:curDir, x:c.x, y:c.y, s:c.s, sx:sh.sx, sy:sh.sy});
+}
+
+function drawHand2D(pr){
+  const side=HP*pr.s;
+  ctx.save();
+  ctx.globalAlpha=pr.a;
+  ctx.imageSmoothingEnabled=true;
+  ctx.imageSmoothingQuality='high';
+  ctx.translate(pr.x, pr.y);
+  ctx.rotate(cam.roll);            /* 相机滚转 → 手握着导线，要跟着一起转 */
+  ctx.scale(pr.sx, pr.sy);         /* 随视角透视缩短（绕握持点缩放） */
+  ctx.scale(-1, 1);                /* 贴图原件是左手，镜像后才是右手，四指绕向也才与 B 一致 */
+  if(pr.dir<0) ctx.scale(-1,-1);   /* 反向电流 → 绕视线轴转 180°：拇指朝下、四指绕向相反，仍是右手 */
+  ctx.drawImage(handImg, -HPX*side, -HPY*side, side, side);
+  ctx.restore();
+
+  /* 小标注：说明这是右手（该视角下掌心朝向观察者，所以拇指看起来在右侧），
+     免得被误认成左手。手形不完整或开始淡出时隐藏。 */
+  const ka=(pr.a-0.55)/0.45;
+  if(ka>0.02 && pr.sy>0.45 && endOnVis()<0.02){
+    /* 标注始终挂到手的外侧，随滚转一起绕握持点转（文字本身保持水平可读） */
+    const ax=Math.abs(Math.sin(cam.roll)), ay=Math.abs(Math.cos(cam.roll));
+    const off=ax*(pr.sx*0.55*side+10)+ay*(pr.sy*(1-HPY)*side+12);
+    const tx=pr.x-Math.sin(cam.roll)*off, ty=pr.y+Math.cos(cam.roll)*off;
+    ctx.save();
+    ctx.globalAlpha=pr.a*ka;
+    ctx.font='700 12px system-ui,-apple-system,"PingFang SC",sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    const t='右手 · 掌心朝向观察者';
+    const w=ctx.measureText(t).width;
+    rrect(tx-w/2-9, ty-11, w+18, 22, 11);
+    ctx.fillStyle='rgba(255,255,255,.88)'; ctx.fill();
+    ctx.fillStyle='#a16207';
+    ctx.fillText(t, tx, ty+0.5);
+    ctx.restore();
+  }
+}
+
+/* --- 俯视符号：⊗ 电流流入纸面 / ⊙ 电流流出纸面 --------------------------- */
+function rrect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);   ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);       ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function drawAxisMark(pr){
+  ctx.save();
+  ctx.translate(pr.x, pr.y);
+  ctx.globalAlpha=pr.a;
+  ctx.lineJoin='round';
+  /* ---- 纵截面：导线正对镜头处的小 ⊗ / ⊙（r0 = 符号的世界半径） ---- */
+  if(pr.style==='dot'){
+    const R=(pr.r0||0.26)*pr.s;
+    ctx.beginPath(); ctx.arc(0,0,R,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,.96)'; ctx.fill();
+    ctx.lineWidth=Math.max(1.6,R*0.15); ctx.strokeStyle=AMBER; ctx.stroke();
+    ctx.lineCap='round'; ctx.strokeStyle='#e8890c';
+    if(pr.away){
+      const L=R*0.46;
+      ctx.lineWidth=Math.max(2,R*0.18);
+      ctx.beginPath(); ctx.moveTo(-L,-L); ctx.lineTo(L,L); ctx.moveTo(-L,L); ctx.lineTo(L,-L); ctx.stroke();
+    }else{
+      ctx.beginPath(); ctx.arc(0,0,R*0.30,0,Math.PI*2); ctx.fillStyle='#e8890c'; ctx.fill();
+    }
+    ctx.restore(); return;
+  }
+  /* ---- 纵截面电流记号的图例 ---- */
+  if(pr.style==='cnote'){
+    /* ⚠️ ctx 已经 translate(pr.x,pr.y) 了，这里一律用**相对坐标**：
+       写成 pr.x/pr.y 的话会被平移两次，图例飞到画布外（踩过一次，看着像根本没画）。 */
+    const FONT='system-ui,-apple-system,"PingFang SC",sans-serif';
+    const fs=15;
+    ctx.font='600 '+fs+'px '+FONT;
+    const tw=ctx.measureText(pr.txt).width;
+    rrect(-tw/2-14, -fs*0.95, tw+28, fs*1.9, fs*0.55);
+    ctx.fillStyle='rgba(255,255,255,.92)'; ctx.fill();
+    ctx.fillStyle='#475569';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(pr.txt, 0, 0);
+    ctx.restore(); return;
+  }
+  if(pr.style==='out'){
+    /* ---- 环内/环外（管内/管外）的小符号：main=1 表示「内部」那一圈，颜色更重 ---- */
+    const R=(pr.r0||0.22)*pr.s;
+    const edge=pr.main?'#2563eb':'#8fb3f2';
+    const ink =pr.main?'#1d4ed8':'#4b7fd8';
+    ctx.beginPath(); ctx.arc(0,0,R,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,.92)'; ctx.fill();
+    ctx.lineWidth=Math.max(1.4,R*0.17); ctx.strokeStyle=edge; ctx.stroke();
+    ctx.strokeStyle=ink; ctx.lineCap='round';
+    if(pr.away){
+      const L=R*0.44;
+      ctx.lineWidth=Math.max(1.7,R*0.20);
+      ctx.beginPath(); ctx.moveTo(-L,-L); ctx.lineTo(L,L); ctx.moveTo(-L,L); ctx.lineTo(L,-L); ctx.stroke();
+    }else{
+      ctx.beginPath(); ctx.arc(0,0,R*0.29,0,Math.PI*2); ctx.fillStyle=ink; ctx.fill();
+    }
+    ctx.restore(); return;
+  }
+  /* ---- 沿轴看：说明文字（中心不再放单个符号，方向交给内外两圈读） ---- */
+  const FONT='system-ui,-apple-system,"PingFang SC",sans-serif';
+  const fs=pr.fs||18;
+  const txt=(pr.tag?pr.tag+'：':'')+(pr.away?'B 指向纸面内（远离你）':'B 指向纸面外（朝向你）');
+  const ty=(pr.ty!==undefined)?pr.ty:fs*3;
+  ctx.font='700 '+fs+'px '+FONT;
+  const tw1=ctx.measureText(txt).width;
+  let fs2=0, tw2=0;
+  if(pr.note){ fs2=Math.round(fs*0.86); ctx.font='600 '+fs2+'px '+FONT; tw2=ctx.measureText(pr.note).width; }
+  const tw=Math.max(tw1,tw2);
+  const boxH=fs*1.60+(pr.note?fs2*1.72:0);
+  rrect(-tw/2-12, ty-fs*0.80, tw+24, boxH, fs*0.5);
+  ctx.fillStyle='rgba(255,255,255,.90)'; ctx.fill();
+  ctx.font='700 '+fs+'px '+FONT; ctx.fillStyle='#1d4ed8';
+  ctx.fillText(txt,0,ty);
+  if(pr.note){
+    ctx.font='600 '+fs2+'px '+FONT; ctx.fillStyle='#64748b';
+    ctx.fillText(pr.note,0,ty+fs*0.58+fs2*0.88);
+  }
+  ctx.restore();
+}
+/* ============================ 绘制 ============================ */
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  prims.sort((p,q)=>q.d-p.d);
+  ctx.lineCap='round'; ctx.lineJoin='round';
+
+  for(let i=0;i<prims.length;i++){
+    const pr=prims[i];
+    if(pr.t===0){
+      const w=Math.max(0.7, pr.w*(pr.a.s+pr.b.s)/2);
+      if(w>90) continue;
+      ctx.globalAlpha=pr.alpha;
+      if(pr.glow){
+        ctx.strokeStyle=pr.glow; ctx.lineWidth=w*2.6; ctx.globalAlpha=pr.alpha*0.35;
+        ctx.beginPath(); ctx.moveTo(pr.a.x,pr.a.y); ctx.lineTo(pr.b.x,pr.b.y); ctx.stroke();
+        ctx.globalAlpha=pr.alpha;
+      }
+      ctx.strokeStyle=pr.c; ctx.lineWidth=w;
+      ctx.beginPath(); ctx.moveTo(pr.a.x,pr.a.y); ctx.lineTo(pr.b.x,pr.b.y); ctx.stroke();
+      ctx.globalAlpha=1;
+    }else if(pr.t===1){
+      ctx.globalAlpha=(pr.a===undefined?1:pr.a);
+      ctx.fillStyle=pr.c;
+      ctx.beginPath();
+      ctx.moveTo(pr.p[0].x,pr.p[0].y);
+      ctx.lineTo(pr.p[1].x,pr.p[1].y);
+      ctx.lineTo(pr.p[2].x,pr.p[2].y);
+      ctx.closePath(); ctx.fill();
+      ctx.globalAlpha=1;
+    }else if(pr.t===2){
+      ctx.globalAlpha=(pr.a===undefined?1:pr.a);
+      ctx.font=pr.font; ctx.fillStyle=pr.c;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(pr.txt,pr.x,pr.y);
+      ctx.globalAlpha=1;
+    }else if(pr.t===3){
+      ctx.beginPath();
+      ctx.moveTo(pr.p[0].x,pr.p[0].y);
+      for(let k=1;k<pr.p.length;k++) ctx.lineTo(pr.p[k].x,pr.p[k].y);
+      ctx.closePath();
+      ctx.fillStyle=pr.c; ctx.fill();
+      if(pr.s){ ctx.strokeStyle=pr.s; ctx.lineWidth=1.1; ctx.stroke(); }   /* 补掉相邻面的抗锯齿缝 */
+    }else if(pr.t===4){
+      drawHand2D(pr);                       /* 内嵌插画手（屏幕空间） */
+    }else if(pr.t===5){
+      drawAxisMark(pr);                     /* 俯视：叉进点出 */
+    }
+  }
+}
+
+/* ============================ 主循环 ============================ */
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(st.playing) st.t+=dt;
+  if(!dragging && !pinch && !dialDrag) inertia(dt);   /* 松手后靠惯性继续滑行 */
+  const k=Math.min(1, dt*11);                 /* 吸附回位用（拖动中 T 与实值同步，等于不生效） */
+  cam.roll  += (cam.rollT -cam.roll )*k;
+  cam.pitch += (cam.pitchT-cam.pitch)*k;
+  trackPole();                                /* 越过极点就补一次滚转，画面不断线 */
+  updateCam();
+  syncRollUI();                               /* 画面方向：按钮状态 + 转向盘指针 */
+  buildScene();
+  draw();
+  requestAnimationFrame(frame);
+}
+
+/* ============================ 交互 ============================ */
+/* 手感四件事：
+   ① 跟手 —— 向右拖，画面就向右转（不是反过来）
+   ② 横拖默认「环绕」，Shift/右键横拖才是「滚转」（把导线放平）
+   ③ 松手留惯性，甩一下能继续滑；滑稳后若接近 90°/180° 再软吸附
+   ④ 单指拖、双指捏合缩放与捻转、滚轮缩放、方向键、Q/E 滚转、双击复位 */
+const SENS=0.0086;                       /* rad / px，横向 */
+const SENS_Y=0.0078;                     /* rad / px，纵向 */
+const P90=Math.PI/2;
+let dragging=false, pinch=null, mode='orbit';
+let lx=0, ly=0, lt=0;
+let vYaw=0, vPitch=0, vRoll=0;           /* 松手时的角速度 rad/s */
+const ptrs=new Map();
+
+/* 俯仰不再限制在 ±90°：越过极点（相机翻到物体的另一侧）时，
+   屏幕右向量 r0 会随 cos(pitch) 一起翻号 —— 这是几何事实，相机是真穿了极点。
+   滚转同步加 π 恰好把它抵消掉，于是画面全程连续，
+   横放之后一路拖下去就能完整绕一整圈（原来是顶在 ±90° 就停住，怎么拖都过不去）。
+   注意：只按「cos(pitch) 的符号变化」触发，所以俯仰刚好停在 90°（俯视按钮）
+   不会误触发；同时按 2π 归约俯仰角，拖很多圈也不会让数值越滚越大。 */
+let cpSign=(Math.cos(cam.pitch)>=0)?1:-1;    /* cos(pitch) 的符号：+ 表示相机在这一侧 */
+function trackPole(){
+  const TAU=Math.PI*2, kk=Math.round(cam.pitch/TAU);
+  if(kk){ cam.pitch-=kk*TAU; cam.pitchT=cam.pitch; }        /* 等价归约：姿态完全不变 */
+  const s=(Math.cos(cam.pitch)>=0)?1:-1;
+  if(s!==cpSign){ cam.roll+=Math.PI; cam.rollT=cam.roll; cpSign=s; }
+}
+function freeCam(){                      /* 拖动期间不做吸附：目标值与实值同步 */
+  cam.rollT=cam.roll; cam.pitchT=cam.pitch;
+}
+
+/* --- 屏幕对齐的转动 ---------------------------------------------------
+   拖动直接改 cam.yaw（绕世界竖直轴）只在没滚转时是对的：roll=0 时世界竖直轴
+   恰好等于屏幕竖直方向，手感正常；可一旦滚转成横放，世界竖直轴在屏幕上已经
+   躺成水平 —— 再绕它转，横拖就变成画面上下翻滚、导线却纹丝不动，
+   这就是"横放时转动不正常"。
+   做法：把拖动量拆成「绕屏幕竖直方向」与「绕屏幕水平方向」两个分量
+   （A、B 就是这两个轴上的转动角），再按 roll 合成 yaw / pitch 的增量：
+       roll = 0    → 只剩 yaw、pitch，与原来的玩法逐位相同；
+       roll = 90°  → 横拖全部落到 pitch（绕屏幕水平轴）→ 画面左右转；
+                     竖拖全部落到 yaw（绕屏幕竖直轴）→ 画面上下转。
+   返回增量，供惯性速度估计。 */
+/* 屏幕上的滚转角。越过极点时 trackPole() 给 cam.roll 补了一次 π（用来抵消
+   右向量的翻号、保画面连续），但拖动的手感不该跟着翻 —— 映射就用「扣掉那次
+   补偿」的角度，于是极点两侧横拖、竖拖的方向完全一致。 */
+function effRoll(){ return cpSign>0 ? cam.roll : cam.roll-Math.PI; }
+function aimDrag(dx,dy){
+  const A=-dx*SENS, B=-dy*SENS_Y;
+  const r=effRoll();
+  const cr=Math.cos(r), sr=Math.sin(r);
+  const dY=A*cr+B*sr, dP=A*sr-B*cr;
+  cam.yaw  +=dY;
+  cam.pitch+=dP;                          /* 俯仰可以越过 ±90°，由 trackPole() 每帧收尾 */
+  return [dY,dP];
+}
+function applyDrag(dx,dy,dt){
+  let wY=0,wP=0,wR=0;
+  if(mode==='roll'){ cam.roll += dx*SENS;   wR= dx*SENS/dt; }
+  const d=aimDrag(mode==='roll'?0:dx, dy);
+  wY=d[0]/dt; wP=d[1]/dt;
+  const a=0.34, VM=6.5;                    /* 速度做点平滑并封顶：甩最猛也只多滑约 2 rad */
+  const cl=v=>v>VM?VM:(v<-VM?-VM:v);
+  vYaw  = cl(vYaw  *(1-a)+wY*a);
+  vPitch= cl(vPitch*(1-a)+wP*a);
+  vRoll = cl(vRoll *(1-a)+wR*a);
+  freeCam();
+}
+/* 惯性滑行：指数衰减，停下来再吸附一次。
+   vYaw / vPitch 本身就是 aimDrag 拆算好的 yaw / pitch 速率（已经含了 roll 的分解），
+   直接累加即可 —— 横放状态下滑行的方向也是跟手的。 */
+function inertia(dt){
+  if(!vYaw && !vPitch && !vRoll) return;
+  cam.yaw   += vYaw  *dt;
+  cam.pitch += vPitch*dt;
+  cam.roll  += vRoll *dt;
+  const damp=Math.exp(-dt*3.2);
+  vYaw*=damp; vPitch*=damp; vRoll*=damp;
+  if(Math.abs(vYaw)  <0.02) vYaw  =0;
+  if(Math.abs(vPitch)<0.02) vPitch=0;
+  if(Math.abs(vRoll) <0.02) vRoll =0;
+  if(!vYaw && !vPitch && !vRoll) snapCam();    /* 滑稳 → 吸附 */
+  else freeCam();
+}
+/* 松手时的软吸附：手工很难正好停在 90°，接近水平/垂直就平滑归位，
+   这样"把导线放平"和"精确侧视/俯视"都能一键到位。 */
+function snapCam(){
+  const TAU=Math.PI*2;
+  if(Math.abs(cam.roll)>TAU){                 /* 转过多圈就归约（2π 的整数倍姿态完全相同，不会跳变） */
+    cam.roll=((cam.roll%TAU)+TAU)%TAU;
+    cam.rollT=cam.roll;                       /* 同步目标值，否则插值会反向转一整圈 */
+  }
+  const Q=Math.PI/2;
+  const rq=Math.round(cam.roll/Q)*Q;
+  if(Math.abs(cam.roll-rq)<0.10) cam.rollT=rq;      /* ≈5.7° 内吸附 → 导线精确水平 */
+  const pq=Math.round(cam.pitch/Q)*Q;
+  if(Math.abs(cam.pitch-pq)<0.07) cam.pitchT=pq;    /* ≈4° 内吸附 → 精确侧视/俯视 */
+}
+
+function onDown(e){
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  vYaw=vPitch=vRoll=0;
+  if(ptrs.size===1){
+    pinch=null; dragging=true;
+    mode=(e.shiftKey||e.button===2)?'roll':'orbit';
+    lx=e.clientX; ly=e.clientY; lt=e.timeStamp||performance.now();
+    cvs.classList.add('grabbing');
+    try{ cvs.setPointerCapture(e.pointerId); }catch(err){}
+  }else{
+    dragging=false; pinch=null; cvs.classList.remove('grabbing');
+    if(ptrs.size===2){
+      const it=Array.from(ptrs.values());
+      pinch={ d:Math.hypot(it[0].x-it[1].x,it[0].y-it[1].y)||1,
+              ang:Math.atan2(it[1].y-it[0].y,it[1].x-it[0].x),
+              dist:cam.dist, roll:cam.roll };
+    }
+  }
+}
+function onMove(e){
+  if(!ptrs.has(e.pointerId)) return;
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch && ptrs.size>=2){
+    const it=Array.from(ptrs.values());
+    const d=Math.hypot(it[0].x-it[1].x,it[0].y-it[1].y)||1;
+    const ang=Math.atan2(it[1].y-it[0].y,it[1].x-it[0].x);
+    cam.dist=Math.max(2.65, Math.min(10.80, pinch.dist*(pinch.d/d)));
+    cam.roll=pinch.roll-(ang-pinch.ang);          /* 双指捻转 → 画面跟手转 */
+    cam.rollT=cam.roll;
+    return;
+  }
+  if(!dragging) return;
+  const now=e.timeStamp||performance.now();
+  const dt=Math.max(0.008,(now-lt)/1000); lt=now;
+  applyDrag(e.clientX-lx, e.clientY-ly, dt);
+  lx=e.clientX; ly=e.clientY;
+}
+function onUp(e){
+  if(e && e.pointerId!==undefined) ptrs.delete(e.pointerId);
+  try{ if(e&&e.pointerId!==undefined) cvs.releasePointerCapture(e.pointerId); }catch(err){}
+  if(ptrs.size===0){
+    pinch=null;
+    if(dragging){ dragging=false; cvs.classList.remove('grabbing'); }
+    const sp=Math.hypot(vYaw,vPitch,vRoll);
+    if(sp<0.5){ vYaw=vPitch=vRoll=0; snapCam(); }  /* 慢速松手 → 直接吸附 */
+    /* 快速松手 → 留着速度继续滑，滑稳后由 inertia() 吸附 */
+  }else if(ptrs.size===1){                        /* 双指变单指：接着拖 */
+    pinch=null; dragging=true;
+    const a=Array.from(ptrs.values())[0];
+    lx=a.x; ly=a.y; lt=performance.now();
+    cvs.classList.add('grabbing');
+  }
+}
+cvs.addEventListener('pointerdown',onDown);
+cvs.addEventListener('pointermove',onMove);
+cvs.addEventListener('pointerup',onUp);
+cvs.addEventListener('pointercancel',onUp);
+cvs.addEventListener('pointerleave',e=>{ if(!cvs.hasPointerCapture||!cvs.hasPointerCapture(e.pointerId)) onUp(e); });
+cvs.addEventListener('contextmenu',e=>e.preventDefault());
+cvs.addEventListener('wheel',e=>{
+  e.preventDefault();
+  cam.dist=Math.max(2.65, Math.min(10.80, cam.dist*Math.exp(e.deltaY*0.0011)));
+},{passive:false});
+cvs.addEventListener('dblclick',()=>setView('iso'));
+
+/* 分段按钮 */
+function bindSeg(id,fn){
+  const box=document.getElementById(id);
+  box.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    box.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    fn(b.dataset.v);
+  });
+}
+bindSeg('segDir',v=>{ st.dir=parseInt(v,10); });
+bindSeg('segView',v=>setView(v));
+bindSeg('segRoll',v=>setRoll(parseInt(v,10)));
+
+function setView(v){
+  vYaw=vPitch=vRoll=0;                      /* 预设视角：清掉惯性 */
+  /* 只改环绕与俯仰，不动 roll —— 「画面方向」(横放/竖直) 是独立开关。
+     否则刚把导线放平，一点「侧视」又自己立回去了，看起来就像"横不了"。 */
+  if(v==='top'){    cam.yaw=0;    cam.pitch= P90; cam.dist=5.13; }
+  if(v==='bottom'){ cam.yaw=0;    cam.pitch=-P90; cam.dist=5.13; }
+  if(v==='iso'){    cam.yaw=1.28; cam.pitch=0.30; cam.dist=5.4; }
+  if(v==='side'){   cam.yaw=0;    cam.pitch=0.00; cam.dist=5.4; }
+  cam.rollT=cam.roll; cam.pitchT=cam.pitch;   /* 预设视角立即到位，不做插值 */
+  const box=document.getElementById('segView');
+  box.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
+  syncRollUI();
+}
+
+/* ============================ 画面滚转 ============================
+   roll 是绕视线轴的滚转。只有 yaw/pitch 的轨道相机永远把世界竖直方向投成屏幕竖直方向，
+   导线因此只能是竖的；加上 roll 才能让导线（轴线）转到水平。
+   入口有四个，保证一定找得到：右下角转向盘 / 「画面方向」按钮 / Shift或右键拖动 / Q、E 键。
+   ------------------------------------------------------------------ */
+function setRoll(deg){
+  vYaw=vPitch=vRoll=0;
+  /* 按「屏幕上的滚转角」设定：跨过极点时 cam.roll 带过一次 π 的补偿，这里补回来 */
+  cam.roll=deg*Math.PI/180+(cpSign>0?0:Math.PI);
+  cam.rollT=cam.roll;
+  syncRollUI();
+}
+function rollState(){                        /* 0=竖直  1=横放  -1=任意角 */
+  let a=(cam.roll*180/Math.PI)%180; if(a<0) a+=180;
+  if(a<2.5||a>177.5) return 0;
+  if(Math.abs(a-90)<2.5) return 1;
+  return -1;
+}
+let uiRoll=null, uiState=null;
+function syncRollUI(){
+  const deg=effRoll()*180/Math.PI;        /* 用屏幕上的实际滚转角，指针不会因极点补偿而跳半圈 */
+  const key=deg.toFixed(1);
+  if(key===uiRoll) return;                   /* 每帧都调用，值没变就直接返回 */
+  uiRoll=key;
+  if(dialBar) dialBar.setAttribute('transform','rotate('+key+' 48 48)');
+  const s=rollState();
+  if(s!==uiState){
+    uiState=s;
+    const box=document.getElementById('segRoll');
+    box.querySelectorAll('button').forEach(b=>{
+      b.classList.toggle('on', (b.dataset.v==='0'&&s===0)||(b.dataset.v==='90'&&s===1));
+    });
+  }
+  const vl=document.getElementById('valRoll');
+  if(vl) vl.textContent = s===0?'竖直' : s===1?'横放' : (Math.round(((deg%180)+180)%180))+'°';
+}
+/* 右下角转向盘：按住拖动，画面跟着手指/鼠标一起转 */
+const dial=document.getElementById('dial'), dialBar=document.getElementById('dialBar');
+let dialDrag=false, dialA0=0, dialR0=0;
+function dialAngle(e){
+  const r=dial.getBoundingClientRect();
+  return Math.atan2(e.clientY-(r.top+r.height/2), e.clientX-(r.left+r.width/2));
+}
+if(dial){
+  dial.addEventListener('pointerdown',e=>{
+    dialDrag=true; vYaw=vPitch=vRoll=0;
+    dialA0=dialAngle(e); dialR0=cam.roll;
+    try{ dial.setPointerCapture(e.pointerId); }catch(err){}
+    e.preventDefault();
+  });
+  dial.addEventListener('pointermove',e=>{
+    if(!dialDrag) return;
+    let d=dialAngle(e)-dialA0;               /* 与画面同向旋转 = 跟手 */
+    while(d> Math.PI) d-=Math.PI*2;
+    while(d<-Math.PI) d+=Math.PI*2;
+    cam.roll=dialR0+d; cam.rollT=cam.roll;   /* 拖动中不做吸附 */
+    e.preventDefault();
+  });
+  const dup=e=>{
+    if(!dialDrag) return;
+    dialDrag=false;
+    try{ dial.releasePointerCapture(e.pointerId); }catch(err){}
+    snapCam();                               /* 松手吸附到最近的 90° */
+  };
+  dial.addEventListener('pointerup',dup);
+  dial.addEventListener('pointercancel',dup);
+}
+
+/* 滑块 */
+const rngI=document.getElementById('rngI'), valI=document.getElementById('valI');
+rngI.addEventListener('input',()=>{
+  st.I=parseFloat(rngI.value);
+  valI.textContent=st.I.toFixed(2)+' A';
+});
+
+/* 开关 */
+function bindSw(id,key){
+  const el=document.getElementById(id);
+  el.addEventListener('click',()=>{
+    el.classList.toggle('on');
+    st[key]=el.classList.contains('on');
+  });
+}
+bindSw('swHand','showHand');
+bindSw('swField','showField');
+
+/* 播放 */
+const btnPlay=document.getElementById('btnPlay');
+btnPlay.addEventListener('click',()=>{
+  st.playing=!st.playing;
+  btnPlay.textContent=st.playing?'暂停动画':'继续动画';
+  btnPlay.classList.toggle('paused',!st.playing);
+});
+
+/* 空格键（焦点在控件上时不拦截） */
+window.addEventListener('keydown',e=>{
+  const t=(document.activeElement&&document.activeElement.tagName)||'';
+  if(e.code==='Space' && t!=='BUTTON' && t!=='INPUT'){ e.preventDefault(); btnPlay.click(); return; }
+  if(t==='INPUT'||t==='TEXTAREA') return;
+  const S=0.075, k=e.key;
+  const kx=S/SENS, ky=S/SENS_Y;             /* 换算成"等效拖动像素"，与拖动走同一条屏幕对齐路径 */
+  if     (k==='ArrowLeft')  aimDrag(-kx, 0);    /* 画面左转 */
+  else if(k==='ArrowRight') aimDrag( kx, 0);    /* 画面右转，与拖动方向一致 */
+  else if(k==='ArrowUp')    aimDrag(0, -ky);
+  else if(k==='ArrowDown')  aimDrag(0,  ky);
+  else if(k==='q'||k==='Q') cam.roll -= S;      /* 滚转：把导线放平/竖起 */
+  else if(k==='e'||k==='E') cam.roll += S;
+  else if(k==='0'){ setView('iso'); return; }
+  else return;
+  e.preventDefault();
+  vYaw=vPitch=vRoll=0; freeCam();
+});
+
+/* ============================ 启动 ============================ */
+resize();
+updateCam(); buildScene(); draw();
+requestAnimationFrame(frame);
+})();
+</script>
+ </body>
+</html>

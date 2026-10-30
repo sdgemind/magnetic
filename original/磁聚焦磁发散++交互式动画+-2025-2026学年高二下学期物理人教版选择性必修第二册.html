@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="zh-CN">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>磁发散 + 磁聚焦组合演示 | 双圆形磁场 | 圆心距 5R | 粒子汇聚</title>
+  <style>
+        * {
+            user-select: none;
+        }
+        body {
+            background: #eef2f7;
+            font-family: 'Segoe UI', 'Roboto', 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .app-container {
+            background: #fffdf8;
+            border-radius: 40px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.2);
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1600px;
+            width: 100%;
+        }
+        .canvas-panel {
+            background: #fefcf5;
+            border-radius: 28px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 15px;
+            flex: 2;
+            min-width: 700px;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: inset 0 0 0 1px #e2edf7, 0 4px 12px rgba(0,0,0,0.05);
+            cursor: crosshair;
+        }
+        .control-panel {
+            flex: 1;
+            min-width: 280px;
+            background: #f8fafd;
+            border-radius: 28px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            overflow-y: auto;
+            max-height: 85vh;
+        }
+        .ctrl-group {
+            background: white;
+            border-radius: 24px;
+            padding: 12px;
+            border: 1px solid #e2edf7;
+        }
+        .ctrl-group label {
+            font-weight: 600;
+            color: #1f4e6e;
+            font-size: 0.8rem;
+            display: block;
+            margin-bottom: 6px;
+        }
+        input {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #ff9800;
+        }
+        .value-badge {
+            background: #eef3fc;
+            padding: 4px 8px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            text-align: center;
+            margin-top: 6px;
+            font-family: monospace;
+        }
+        button {
+            background: #ff9800;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #ffb74d;
+            transform: scale(1.02);
+        }
+        .btn-secondary {
+            background: #3f51b5;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #5c6bc0;
+        }
+        .status-text {
+            font-size: 0.7rem;
+            color: #ff8c42;
+            text-align: center;
+        }
+        hr {
+            margin: 8px 0;
+            border-color: #dce5f0;
+        }
+        .flex-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 5px;
+        }
+        .flex-row button {
+            flex: 1;
+        }
+        @media (max-width: 900px) {
+            .canvas-panel { min-width: 450px; }
+        }
+    </style>
+  <meta name="copyright" content="学科网（zxxk.com）版权所有">
+  <meta name="signature" content="QQABRQSEogiAAgBAARgCAQXQCAKYkgCCAIgGhFAUIAAACBNABAA=">
+ </head>
+ <body>
+  <div class="app-container">
+   <div class="canvas-panel">
+    <canvas id="mainCanvas" width="1000" height="650" style="width:100%; height:auto; background:#ffffff;"></canvas>
+   </div>
+   <div class="control-panel">
+    <div class="ctrl-group">
+     <label>🧲 发散磁场半径 (px)</label> <input type="range" id="magRadius" min="50" max="150" step="1" value="80">
+     <div class="value-badge" id="magRadiusVal">
+      80 px
+     </div>
+    </div>
+    <div class="ctrl-group">
+     <label>📍 发散磁场圆心 X</label> <input type="range" id="magCenterX" min="150" max="700" step="1" value="300">
+     <div class="value-badge" id="magCXVal">
+      300
+     </div>
+    </div>
+    <div class="ctrl-group">
+     <label>📍 发散磁场圆心 Y</label> <input type="range" id="magCenterY" min="100" max="550" step="1" value="325">
+     <div class="value-badge" id="magCYVal">
+      325
+     </div>
+    </div>
+    <div class="ctrl-group">
+     <label>🎯 发射点角度 (0°=右侧边界, 逆时针)</label> <input type="range" id="emitAngle" min="0" max="360" step="1" value="270">
+     <div class="value-badge" id="emitAngleVal">
+      270° (正下方)
+     </div>
+    </div>
+    <div class="ctrl-group">
+     <label>🔢 粒子数量 (1~10)</label> <input type="range" id="particleCount" min="1" max="10" step="1" value="7">
+     <div class="value-badge" id="particleCountVal">
+      7
+     </div><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAVCAIAAAA1onI1AAAAsElEQVR4nO1UWw6DMAyLt957PfkyJtSSRxOCpn1MmoVQKLZrQgDMTLQdGGdaXZKuSaysce+9D8bkQetzI0k+6s33EdtB1zM43B52y+ZuSL0pdph0UnjA5I06YKKZvi2w9zexoKAbJ2SZN3esA9532uWh8hWis3mopnOx0MRqceYNzc8MU/DeEIiLeGcC87NIDbBOgPF/mGI59pegnqml3+4lKGH7wCjD7Rumf9+f9X0BZDE2RegJ1FkAAAAASUVORK5CYII=" style="position: absolute; left: -99999px; top: -99999px; opacity: 0; pointer-events: none; width: 1px; height: 1px;">
+    </div>
+    <div class="ctrl-group">
+     <label>📐 发散半角 (度) - 粒子方向范围</label> <input type="range" id="divergenceAngle" min="0" max="80" step="2" value="50">
+     <div class="value-badge" id="divergenceVal">
+      50°
+     </div>
+    </div>
+    <div class="ctrl-group">
+     <label>🌀 轨迹半径 (px) - 物理偏转半径</label> <input type="range" id="trackRadius" min="20" max="200" step="1" value="80">
+     <div class="value-badge" id="trackRadiusVal">
+      80 px
+     </div>
+    </div>
+    <div class="flex-row">
+     <button id="matchRadiusBtn" class="btn-secondary">✨ 一键适配: 轨迹半径 = 磁场半径</button>
+    </div>
+    <div class="flex-row">
+     <button id="emitBtn">🚀 发射粒子 (清空轨迹)</button>
+    </div>
+    <div class="flex-row">
+     <button id="toggleShadowBtn" class="btn-secondary">🔮 显示/隐藏 聚焦磁场</button>
+    </div>
+    <hr>
+    <div class="ctrl-group">
+     <label>📏 辅助画线工具</label>
+     <div class="flex-row">
+      <button id="clearLinesBtn" class="btn-secondary">🗑️ 清除所有绿线</button>
+     </div>
+     <div class="status-text" id="lineModeHint">
+      ● 鼠标右键点击画直线
+     </div>
+    </div>
+    <div class="status-text" id="animStatus">
+     ⚡ 粒子运动 | 发散磁场 → 平行束 → 聚焦磁场汇聚
+    </div>
+   </div>
+  </div>
+  <script>
+    (function(){
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        let width = 1000, height = 650;
+        canvas.width = width; canvas.height = height;
+        
+        // ---------- 全局参数 ----------
+        let magRadius = 80;             // 发散磁场半径(px)
+        let magCenter = { x: 300, y: 325 };
+        let emitAngleDeg = 270;         // 发射点边界角度(°)
+        let particleCount = 7;
+        let divergenceHalf = 50;        // 发散半角(度)
+        let trackRadius = 80;           // 粒子圆周运动半径(px)
+        
+        // 影子磁场 (聚焦磁场) - 圆心距改为 5R
+        let shadowEnabled = true;
+        let shadowCenter = { x: magCenter.x + 5 * magRadius, y: magCenter.y }; // 圆心相距 5R
+        
+        // 辅助线存储
+        let auxLines = [];
+        let drawingLine = null;
+        
+        // ---------- 粒子系统 ----------
+        let particles = [];
+        
+        // 获取发射点坐标
+        function getEmitPoint() {
+            let rad = emitAngleDeg * Math.PI / 180;
+            let x = magCenter.x + magRadius * Math.cos(rad);
+            let y = magCenter.y + magRadius * Math.sin(rad);
+            return { x, y };
+        }
+        
+        // 判断点是否在某个磁场内部
+        function isInsideMagneticField(x, y, center, radius) {
+            return Math.hypot(x - center.x, y - center.y) <= radius;
+        }
+        
+        // 粒子物理更新 (支持双磁场)
+        function updateParticle(particle, dt) {
+            if(!particle.isActive) return;
+            let px = particle.x, py = particle.y;
+            let vx = particle.vx, vy = particle.vy;
+            
+            let inMain = isInsideMagneticField(px, py, magCenter, magRadius);
+            let inShadow = shadowEnabled && isInsideMagneticField(px, py, shadowCenter, magRadius);
+            
+            let inside = inMain || inShadow;
+            if(inside) {
+                let v = Math.hypot(vx, vy);
+                if(v > 0.01 && trackRadius > 0.01) {
+                    let omega = - v / trackRadius;
+                    let angle = Math.atan2(vy, vx);
+                    let newAngle = angle + omega * dt;
+                    let newVx = v * Math.cos(newAngle);
+                    let newVy = v * Math.sin(newAngle);
+                    particle.vx = newVx;
+                    particle.vy = newVy;
+                }
+            }
+            let newX = px + particle.vx * dt;
+            let newY = py + particle.vy * dt;
+            particle.x = newX;
+            particle.y = newY;
+            
+            let last = particle.path[particle.path.length-1];
+            if(Math.hypot(newX - last.x, newY - last.y) > 3) {
+                particle.path.push({ x: newX, y: newY });
+            }
+            if(newX < -100 || newX > width+100 || newY < -100 || newY > height+100) {
+                particle.isActive = false;
+            }
+        }
+        
+        function updateAllParticles(dt) {
+            for(let p of particles) {
+                if(p.isActive) updateParticle(p, dt);
+            }
+        }
+        
+        // 发射粒子：清空历史，重新生成
+        function emitParticles() {
+            particles = [];
+            const emitPos = getEmitPoint();
+            const speed = 200;   // 像素/秒
+            let inwardDir = { x: magCenter.x - emitPos.x, y: magCenter.y - emitPos.y };
+            let len = Math.hypot(inwardDir.x, inwardDir.y);
+            if(len < 0.001) len = 1;
+            let inwardNorm = { x: inwardDir.x / len, y: inwardDir.y / len };
+            let baseAngle = Math.atan2(inwardNorm.y, inwardNorm.x);
+            let halfRad = divergenceHalf * Math.PI / 180;
+            for(let i=0; i<particleCount; i++) {
+                let offset = (i - (particleCount-1)/2) * (2*halfRad) / (particleCount-1 || 1);
+                let dirAngle = baseAngle + offset;
+                let vx = Math.cos(dirAngle) * speed;
+                let vy = Math.sin(dirAngle) * speed;
+                particles.push({
+                    x: emitPos.x, y: emitPos.y,
+                    vx: vx, vy: vy,
+                    isActive: true,
+                    path: [{ x: emitPos.x, y: emitPos.y }]
+                });
+            }
+        }
+        
+        // ---------- 绘图函数 ----------
+        function drawMagneticField(center, radius, label, color = "#3399ff") {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, radius, 0, 2*Math.PI);
+            ctx.fillStyle = "#cceeff33";
+            ctx.fill();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5,6]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.font = `${Math.max(12, radius/8)}px "Segoe UI"`;
+            ctx.fillStyle = color + "aa";
+            let step = Math.max(20, radius/6);
+            for(let i = -radius+step; i < radius-step; i+=step) {
+                for(let j = -radius+step; j < radius-step; j+=step) {
+                    let x = center.x + i;
+                    let y = center.y + j;
+                    ctx.fillText("×", x-5, y+5);
+                }
+            }
+            ctx.fillStyle = "#2266aa";
+            ctx.font = "12px monospace";
+            ctx.fillText(label, center.x-30, center.y-radius-8);
+            ctx.restore();
+        }
+        
+        function drawTrajectories() {
+            for(let p of particles) {
+                if(p.path.length < 2) continue;
+                ctx.beginPath();
+                ctx.moveTo(p.path[0].x, p.path[0].y);
+                for(let i=1; i<p.path.length; i++) {
+                    ctx.lineTo(p.path[i].x, p.path[i].y);
+                }
+                ctx.strokeStyle = `hsl(${20 + p.path.length % 360}, 70%, 55%)`;
+                ctx.lineWidth = 1.8;
+                ctx.stroke();
+            }
+        }
+        
+        function drawActiveParticles() {
+            for(let p of particles) {
+                if(!p.isActive) continue;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4, 0, 2*Math.PI);
+                ctx.fillStyle = "#ff6600";
+                ctx.fill();
+                ctx.fillStyle = "black";
+                ctx.font = "bold 10px monospace";
+                ctx.fillText("e⁻", p.x-4, p.y-5);
+            }
+        }
+        
+        function drawEmitPoint() {
+            let ep = getEmitPoint();
+            ctx.beginPath();
+            ctx.arc(ep.x, ep.y, 6, 0, 2*Math.PI);
+            ctx.fillStyle = "#e34234";
+            ctx.fill();
+            ctx.fillStyle = "white";
+            ctx.fillText("发射点", ep.x-18, ep.y-6);
+        }
+        
+        function drawAuxLines() {
+            for(let line of auxLines) {
+                ctx.beginPath();
+                ctx.moveTo(line.start.x, line.start.y);
+                ctx.lineTo(line.end.x, line.end.y);
+                ctx.strokeStyle = "#44ff66";
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(line.start.x, line.start.y, 3, 0, 2*Math.PI);
+                ctx.fillStyle = "#44ff66";
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(line.end.x, line.end.y, 3, 0, 2*Math.PI);
+                ctx.fill();
+            }
+        }
+        
+        function drawGrid() {
+            ctx.save();
+            ctx.strokeStyle = "#e2e8f0";
+            ctx.lineWidth = 0.5;
+            for(let i=0; i<width; i+=40) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, height);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(width, i);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+        
+        function render() {
+            ctx.clearRect(0, 0, width, height);
+            drawGrid();
+            drawMagneticField(magCenter, magRadius, "发散磁场 B ⊙", "#3399ff");
+            if(shadowEnabled) {
+                drawMagneticField(shadowCenter, magRadius, "聚焦磁场 B ⊙", "#66cc66");
+            }
+            drawTrajectories();
+            drawActiveParticles();
+            drawEmitPoint();
+            drawAuxLines();
+            ctx.fillStyle = "#2c5a7a";
+            ctx.font = "12px monospace";
+            ctx.fillText(`发散磁场半径: ${magRadius}px | 轨迹半径: ${trackRadius}px`, 20, 40);
+            ctx.fillText(`发射点角度: ${emitAngleDeg}°`, 20, 65);
+            if(shadowEnabled) {
+                ctx.fillStyle = "#66cc66";
+                ctx.fillText(`聚焦磁场圆心距: ${(shadowCenter.x - magCenter.x).toFixed(0)}px (≈ 5R)`, 20, 90);
+            }
+        }
+        
+        // ---------- 动画循环 ----------
+        let lastPhysTime = 0;
+        function animate(timestamp) {
+            if(!lastPhysTime) lastPhysTime = timestamp;
+            let dt = Math.min(0.033, (timestamp - lastPhysTime) / 1000);
+            if(dt > 0.001) {
+                updateAllParticles(dt);
+                lastPhysTime = timestamp;
+            }
+            render();
+            requestAnimationFrame(animate);
+        }
+        
+        // ---------- 辅助线交互 ----------
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let mouseX = (e.clientX - rect.left) * scaleX;
+            let mouseY = (e.clientY - rect.top) * scaleY;
+            mouseX = Math.min(Math.max(0, mouseX), width);
+            mouseY = Math.min(Math.max(0, mouseY), height);
+            if(drawingLine === null) {
+                drawingLine = { x: mouseX, y: mouseY };
+            } else {
+                auxLines.push({ start: { x: drawingLine.x, y: drawingLine.y }, end: { x: mouseX, y: mouseY } });
+                drawingLine = null;
+            }
+        });
+        
+        function clearAuxLines() {
+            auxLines = [];
+            drawingLine = null;
+            render();
+        }
+        
+        // ---------- UI 绑定与参数同步 ----------
+        const magRadiusSlider = document.getElementById('magRadius');
+        const magCXSlider = document.getElementById('magCenterX');
+        const magCYSlider = document.getElementById('magCenterY');
+        const emitAngleSlider = document.getElementById('emitAngle');
+        const particleCountSlider = document.getElementById('particleCount');
+        const divergenceSlider = document.getElementById('divergenceAngle');
+        const trackRadiusSlider = document.getElementById('trackRadius');
+        const matchBtn = document.getElementById('matchRadiusBtn');
+        const emitBtn = document.getElementById('emitBtn');
+        const clearLinesBtn = document.getElementById('clearLinesBtn');
+        const toggleShadowBtn = document.getElementById('toggleShadowBtn');
+        
+        function updateUIvalues() {
+            document.getElementById('magRadiusVal').innerText = magRadius + " px";
+            document.getElementById('magCXVal').innerText = magCenter.x;
+            document.getElementById('magCYVal').innerText = magCenter.y;
+            document.getElementById('emitAngleVal').innerText = emitAngleDeg + "°";
+            document.getElementById('particleCountVal').innerText = particleCount;
+            document.getElementById('divergenceVal').innerText = divergenceHalf + "°";
+            document.getElementById('trackRadiusVal').innerText = trackRadius + " px";
+        }
+        
+        // 同步影子磁场位置 (圆心相距 5R)
+        function updateShadowCenter() {
+            shadowCenter = { x: magCenter.x + 5 * magRadius, y: magCenter.y };
+        }
+        
+        function refreshParams() {
+            magRadius = parseFloat(magRadiusSlider.value);
+            magCenter.x = parseFloat(magCXSlider.value);
+            magCenter.y = parseFloat(magCYSlider.value);
+            emitAngleDeg = parseFloat(emitAngleSlider.value);
+            particleCount = parseInt(particleCountSlider.value);
+            divergenceHalf = parseFloat(divergenceSlider.value);
+            trackRadius = parseFloat(trackRadiusSlider.value);
+            updateShadowCenter();
+            updateUIvalues();
+        }
+        
+        function matchRadius() {
+            trackRadius = magRadius;
+            trackRadiusSlider.value = trackRadius;
+            updateUIvalues();
+        }
+        
+        function doEmit() {
+            refreshParams();
+            emitParticles();
+            render();
+        }
+        
+        function toggleShadow() {
+            shadowEnabled = !shadowEnabled;
+            toggleShadowBtn.innerText = shadowEnabled ? "🔮 隐藏聚焦磁场" : "🔮 显示聚焦磁场";
+            render();
+        }
+        
+        // 监听滑块变化
+        magRadiusSlider.addEventListener('input', () => { refreshParams(); render(); });
+        magCXSlider.addEventListener('input', () => { refreshParams(); render(); });
+        magCYSlider.addEventListener('input', () => { refreshParams(); render(); });
+        emitAngleSlider.addEventListener('input', () => { refreshParams(); render(); });
+        particleCountSlider.addEventListener('input', () => { refreshParams(); render(); });
+        divergenceSlider.addEventListener('input', () => { refreshParams(); render(); });
+        trackRadiusSlider.addEventListener('input', () => { refreshParams(); render(); });
+        matchBtn.addEventListener('click', () => { matchRadius(); render(); });
+        emitBtn.addEventListener('click', () => { doEmit(); });
+        clearLinesBtn.addEventListener('click', () => { clearAuxLines(); render(); });
+        toggleShadowBtn.addEventListener('click', () => { toggleShadow(); });
+        
+        // 初始化
+        function init() {
+            refreshParams();
+            emitParticles();
+            animate(0);
+        }
+        
+        window.addEventListener('resize', () => { render(); });
+        init();
+    })();
+</script>
+ </body>
+</html>

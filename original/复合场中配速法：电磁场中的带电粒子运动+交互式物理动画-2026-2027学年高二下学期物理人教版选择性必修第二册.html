@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="zh-CN">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>复合场中配速法：电磁场中的带电粒子运动 | 交互式物理动画</title>
+  <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Poppins', 'Roboto', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(145deg, #f5f7fc 0%, #e9eef4 100%);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1300px;
+            width: 100%;
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(2px);
+            border-radius: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.05);
+            padding: 1.5rem;
+            transition: all 0.2s;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 0 0 0.25rem 0;
+            background: linear-gradient(135deg, #1f2b4e, #2c3e66);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+
+        .sub {
+            color: #4a627a;
+            border-left: 4px solid #3b82f6;
+            padding-left: 1rem;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .theory-card {
+            background: #ffffffcc;
+            backdrop-filter: blur(4px);
+            border-radius: 1.5rem;
+            padding: 0.8rem 1.2rem;
+            margin-bottom: 1.2rem;
+            font-size: 0.9rem;
+            border: 1px solid #ffffffaa;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .theory-card p {
+            margin: 0.5rem 0;
+            line-height: 1.4;
+        }
+
+        .theory-card .formula {
+            font-family: 'Courier New', 'Fira Code', monospace;
+            background: #1e293b;
+            color: #e2e8f0;
+            display: inline-block;
+            padding: 0.1rem 0.4rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        .flex-main {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .canvas-area {
+            flex: 3;
+            min-width: 280px;
+            background: #fefefe;
+            border-radius: 1.8rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            padding: 0.8rem;
+        }
+
+        .controls-area {
+            flex: 1.2;
+            min-width: 240px;
+            background: rgba(255,255,245,0.8);
+            backdrop-filter: blur(4px);
+            border-radius: 1.8rem;
+            padding: 1.2rem;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+            border: 1px solid rgba(255,255,255,0.6);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            background: #0b1120;
+            border-radius: 1.2rem;
+            cursor: crosshair;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1), 0 4px 12px black;
+        }
+
+        .param-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .param-group label {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+            color: #1f2a44;
+            margin-bottom: 0.3rem;
+            font-size: 0.85rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: #cbd5e1;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: 2px solid white;
+        }
+
+        .param-value {
+            background: #eef2ff;
+            padding: 0.15rem 0.6rem;
+            border-radius: 20px;
+            font-family: monospace;
+            font-weight: 600;
+        }
+
+        .info-panel {
+            background: #0f172a;
+            border-radius: 1.2rem;
+            padding: 0.9rem;
+            margin: 1rem 0;
+            color: #cbd5e6;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 0.3rem;
+            font-family: monospace;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            margin: 1.2rem 0 0.5rem;
+        }
+
+        button {
+            background: #1e293b;
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.8rem;
+            flex: 1;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        button:hover {
+            background: #3b82f6;
+            transform: scale(0.97);
+        }
+
+        .legend {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.8rem;
+            font-size: 0.7rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge {
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
+            display: inline-block;
+        }
+
+        footer {
+            font-size: 0.7rem;
+            text-align: center;
+            margin-top: 1.2rem;
+            color: #4b5563;
+        }
+        @media (max-width: 760px) {
+            .container { padding: 1rem; }
+            .theory-card { font-size: 0.8rem; }
+        }
+    </style>
+  <meta name="copyright" content="学科网（zxxk.com）版权所有">
+  <meta name="signature" content="QQABTYK15gC4gBaACD4qQwHCCUmYkpAhLIoMRVCaOARCAIFAFAA=">
+ </head>
+ <body>
+  <div class="container">
+   <h1>⚡ 复合场中配速法 · 带电粒子摆线运动</h1>
+   <div class="sub">
+    匀强电场 E↑ + 匀强磁场 ⊗ | 配速分解为 匀速漂移 + 匀速圆周运动 → 旋轮线/摆线轨迹
+   </div>
+   <div class="theory-card">
+    <p>📐 <strong>配速法思想</strong>：将粒子的初速度分解为 <span class="formula">v<sub>d</sub> = E/B</span> 与 <span class="formula">v'</span>，其中 <span class="formula">v<sub>d</sub></span> 使电场力与洛伦兹力平衡，剩余速度 <span class="formula">v'</span> 导致匀速圆周运动。合运动 = 漂移 + 圆周运动 → 摆线/次摆线。</p>
+    <p>🎯 当前模拟：正电荷(q=1, m=1) | 电场Y轴正向，磁场垂直纸面向外 | 实时数值积分(RK4) + 配速理论参数展示。</p>
+   </div>
+   <div class="flex-main">
+    <div class="canvas-area">
+     <canvas id="simCanvas" width="800" height="500" style="width:100%; height:auto; aspect-ratio:800/500"></canvas>
+     <div class="legend"><span>
+       <div class="badge" style="background: #f97316;"></div> 粒子 (实时)</span> <span>
+       <div class="badge" style="background: #3b82f6; border-radius: 10px;"></div> 运动轨迹</span> <span>
+       <div class="badge" style="background: #a855f7;"></div> 配速理论摆线 (解析参考)</span> <span>
+       <div class="badge" style="background: #10b981;"></div> 漂移速度矢量</span>
+     </div>
+    </div>
+    <div class="controls-area">
+     <div class="param-group"><label>电场强度 E <span id="E_val" class="param-value">1.00</span></label> <input type="range" id="E_slider" min="0.2" max="4.0" step="0.02" value="1.2">
+     </div>
+     <div class="param-group"><label>磁感应强度 B <span id="B_val" class="param-value">1.00</span><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACMAAAAmCAIAAADBdrW9AAAAnElEQVR42u2U3QqAMAiFff+H9kQEbeXvRnR1JGKT6eeOQ8FpOv3d7WutT2fLxKTWOJ1WH5KFNOI1KAKN8+OMGJerWySsK68VABfJloC0ZKx4sjuVGrq3KaS7SYj76YqTvB1b1iBF7XHjI6ufkphO5rnQA8MqKb0ArLxvv7sSZEcqYH9M6DwjdkbLhgn+MpJIIokkkkgiiSSSSPrGDqF2hmiY1ug8AAAAAElFTkSuQmCC" style="position: absolute; left: -99999px; top: -99999px; opacity: 0; pointer-events: none; width: 1px; height: 1px;"></label> <input type="range" id="B_slider" min="0.3" max="3.0" step="0.02" value="1.0">
+     </div>
+     <div class="param-group"><label>水平初速度 v₀ <span id="v0_val" class="param-value">0.00</span></label> <input type="range" id="v0_slider" min="-3.0" max="5.0" step="0.05" value="0.0">
+     </div>
+     <div class="info-panel">
+      <div class="info-row"><span>⚡ 漂移速度 v_d = E/B</span><span id="drift_speed">0.00</span>
+      </div>
+      <div class="info-row"><span>🌀 剩余速度 |v'| = |v₀ - v_d|</span><span id="vprime">0.00</span>
+      </div>
+      <div class="info-row"><span>🎯 理论圆周半径 R = m·|v'|/(qB)</span><span id="radius_theory">0.00</span>
+      </div>
+      <div class="info-row"><span>⏱️ 角频率 ω = qB/m</span><span id="omega">0.00</span>
+      </div>
+      <div class="info-row"><span>📐 运动类型</span><span id="motion_type">摆线型</span>
+      </div>
+     </div>
+     <div class="button-group"><button id="resetBtn">⟳ 重置模拟</button> <button id="pauseBtn">⏸️ 暂停/运行</button> <button id="clearTrailBtn">🗑️ 清空轨迹</button>
+     </div>
+     <div style="font-size:0.7rem; margin-top: 10px; text-align:center;color:#475569">
+      💡 配速法精髓：初始速度分解 → 漂移匀速 + 圆周运动 <br>
+       滑块改变场强/初速，立即重置并展示新运动！
+     </div>
+    </div>
+   </div>
+   <footer>
+    基于洛伦兹力与牛顿第二定律数值积分 (RK4) | 配速法解析轨迹辅助对比 | 展示经典摆线
+   </footer>
+  </div>
+  <script>
+    (function(){
+        // ---------- 物理参数 & 全局状态 ----------
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 固定参数 (q=1, m=1 自然单位制，保证直观轨迹)
+        const q = 1.0;
+        const m = 1.0;
+        
+        // 可变场参数
+        let E = 1.2;       // 电场强度 (y轴正向)
+        let B = 1.0;       // 磁感应强度 (垂直纸面向外)
+        let v0_x = 0.0;    // 初始水平速度
+        
+        // 运动状态
+        let x = 0.0, y = 0.0;
+        let vx = 0.0, vy = 0.0;
+        
+        // 轨迹存储 (世界坐标，最多保留4000点)
+        let trailPoints = [{x:0, y:0}];
+        const MAX_TRAIL = 5000;
+        
+        // 动画控制
+        let animationId = null;
+        let lastTimestamp = 0;
+        let paused = false;
+        let simTime = 0.0;
+        
+        // 跟随视图偏移 (让粒子保持在视野中央，不丢失)
+        let offsetX = 0, offsetY = 0;
+        // 缩放比例 (单位: 像素/米  , 适应画布大小)
+        let scale = 22;   // 1单位长度=22px
+        
+        // 辅助显示: 理论配速摆线点 (用于参考对比，基于解析解)
+        let theoryPathPoints = [];
+        let needUpdateTheory = true;  // 参数改变时更新理论轨迹
+        
+        // DOM 元素
+        const E_slider = document.getElementById('E_slider');
+        const B_slider = document.getElementById('B_slider');
+        const v0_slider = document.getElementById('v0_slider');
+        const E_val = document.getElementById('E_val');
+        const B_val = document.getElementById('B_val');
+        const v0_val = document.getElementById('v0_val');
+        const drift_speedSpan = document.getElementById('drift_speed');
+        const vprimeSpan = document.getElementById('vprime');
+        const radius_theorySpan = document.getElementById('radius_theory');
+        const omegaSpan = document.getElementById('omega');
+        const motion_typeSpan = document.getElementById('motion_type');
+        
+        const resetBtn = document.getElementById('resetBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const clearTrailBtn = document.getElementById('clearTrailBtn');
+        
+        // ----- 辅助函数：更新配速理论显示与理论轨迹 -----
+        function computeTheoryParams() {
+            const v_d = E / B;
+            const v_prime = v0_x - v_d;
+            const abs_vp = Math.abs(v_prime);
+            const R_theory = m * abs_vp / (q * B);
+            const omega_val = q * B / m;
+            return { v_d, v_prime, abs_vp, R_theory, omega_val };
+        }
+        
+        function updateInfoAndTheoryPath() {
+            const { v_d, v_prime, abs_vp, R_theory, omega_val } = computeTheoryParams();
+            drift_speedSpan.innerText = v_d.toFixed(3);
+            vprimeSpan.innerText = v_prime.toFixed(3);
+            radius_theorySpan.innerText = R_theory.toFixed(3);
+            omegaSpan.innerText = omega_val.toFixed(3);
+            let motionType = "";
+            if (Math.abs(v_prime) < 0.05) motionType = "📌 直线漂移 (临界)";
+            else if (Math.abs(v0_x) < 0.1 && Math.abs(v_d) > 0.2) motionType = "🔄 纯摆线 (滚轮线)";
+            else if (v_prime > 0) motionType = "📈 长幅摆线";
+            else motionType = "📉 短幅摆线";
+            motion_typeSpan.innerText = motionType;
+            
+            // 生成理论配速轨迹 (解析解，展示对比)  时间范围从0到当前模拟时间附近(动态3~8秒) 
+            // 为了视觉效果, 生成未来一段或基于当前时间范围? 我们生成未来4秒的轨迹叠加 vs 实时模拟
+            // 但参数改变时应当基于当前初值持续，为了参考曲线美观，生成0~t_max = 10秒内 或根据漂移速度适应宽度
+            needUpdateTheory = true;
+            generateTheoryTrajectory();
+        }
+        
+        function generateTheoryTrajectory() {
+            // 基于配速法解析公式: 初始位置 (0,0) , 漂移速度 v_d = E/B , 圆周运动半径 R , ω
+            const { v_d, v_prime, R_theory, omega_val } = computeTheoryParams();
+            if (!isFinite(R_theory) || R_theory > 50) {
+                theoryPathPoints = [];
+                return;
+            }
+            const omega = omega_val;
+            const R = R_theory;
+            const vp = v_prime;
+            // 圆周运动的初始相位分析: 之前推导, 对于v'沿x正向, 初始圆心(0, R) 得到轨迹: 
+            // x = v_d * t + R * sin(ω t) , y = R - R * cos(ω t)
+            // 若v'为负, 旋转方向相反，但为了显示通用，公式仍能表现不同摆线类型，直接使用标准参数方程对任意v_prime:
+            // 实际严格的普适解: x(t)= v_d*t + (vp/ω)*sin(ω t) , y(t) = (vp/ω)*(1 - cos(ω t))
+            // 因为 R = |vp|/ω , 符号由vp决定方向，当vp>0为正摆线,y峰值更高, vp<0倒摆线。
+            // 同时需要考虑初始速度满足条件，使用通用形式使理论轨迹正确。
+            // 推导: 标准摆线参数: x = v_d t + (vp/ω) sin(ω t) , y = (|vp|/ω)*(1 - cos(ω t)) * sign(vp) ? 为保持初速方向统一:
+            // 洛伦兹圆周部分运动微分方程给出: 若v'为正, vy初速0, 圆周向上偏移；若v'为负, 向下偏移，使用如下公式完美符合数值解
+            const amplitude = (vp) / omega;   // 可以是负的，影响旋转方向
+            const radiusAbs = Math.abs(amplitude);
+            const signY = (vp >= 0) ? 1 : -1;  // 正速度摆线向上拱起，负速度向下拱
+            // 采用精确参数方程:
+            // x_th(t) = v_d * t + amplitude * sin(omega * t)
+            // y_th(t) = radiusAbs * (1 - cos(omega * t)) * signY
+            const maxT = Math.min(12.0, Math.max(6.0, 28.0 / (Math.abs(v_d)+0.5)));  // 动态显示足够长的轨迹
+            const steps = 400;
+            theoryPathPoints = [];
+            for (let i = 0; i <= steps; i++) {
+                let t = (i / steps) * maxT;
+                let x_th = v_d * t + amplitude * Math.sin(omega * t);
+                let y_th = radiusAbs * (1 - Math.cos(omega * t)) * signY;
+                if (isFinite(x_th) && isFinite(y_th)) {
+                    theoryPathPoints.push({ x: x_th, y: y_th });
+                }
+            }
+        }
+        
+        // ----- 物理 RK4 积分 (洛伦兹力) -----
+        function acceleration(vx_, vy_, E_, B_) {
+            // ax = q/m * (vy * B)   (电场沿y, 磁场产生x方向力 Fx = q*vy*B)
+            // ay = q/m * (E - vx * B)
+            const ax = (q/m) * (vy_ * B_);
+            const ay = (q/m) * (E_ - vx_ * B_);
+            return { ax, ay };
+        }
+        
+        function rk4Step(dt) {
+            // 当前状态
+            let px = x, py = y, pvx = vx, pvy = vy;
+            // k1
+            let a1 = acceleration(pvx, pvy, E, B);
+            let k1x = pvx;
+            let k1y = pvy;
+            let k1vx = a1.ax;
+            let k1vy = a1.ay;
+            // k2
+            let x2 = px + 0.5*dt*k1x;
+            let y2 = py + 0.5*dt*k1y;
+            let vx2 = pvx + 0.5*dt*k1vx;
+            let vy2 = pvy + 0.5*dt*k1vy;
+            let a2 = acceleration(vx2, vy2, E, B);
+            let k2x = vx2;
+            let k2y = vy2;
+            let k2vx = a2.ax;
+            let k2vy = a2.ay;
+            // k3
+            let x3 = px + 0.5*dt*k2x;
+            let y3 = py + 0.5*dt*k2y;
+            let vx3 = pvx + 0.5*dt*k2vx;
+            let vy3 = pvy + 0.5*dt*k2vy;
+            let a3 = acceleration(vx3, vy3, E, B);
+            let k3x = vx3;
+            let k3y = vy3;
+            let k3vx = a3.ax;
+            let k3vy = a3.ay;
+            // k4
+            let x4 = px + dt*k3x;
+            let y4 = py + dt*k3y;
+            let vx4 = pvx + dt*k3vx;
+            let vy4 = pvy + dt*k3vy;
+            let a4 = acceleration(vx4, vy4, E, B);
+            let k4x = vx4;
+            let k4y = vy4;
+            let k4vx = a4.ax;
+            let k4vy = a4.ay;
+            
+            x = px + dt*(k1x + 2*k2x + 2*k3x + k4x)/6;
+            y = py + dt*(k1y + 2*k2y + 2*k3y + k4y)/6;
+            vx = pvx + dt*(k1vx + 2*k2vx + 2*k3vx + k4vx)/6;
+            vy = pvy + dt*(k1vy + 2*k2vy + 2*k3vy + k4vy)/6;
+        }
+        
+        // 重置模拟 (物理状态归零，保留当前E,B,v0)
+        function resetSimulation() {
+            x = 0; y = 0;
+            vx = v0_x;
+            vy = 0;
+            simTime = 0;
+            trailPoints = [{x:0, y:0}];
+            // 重置理论轨迹显示随参数更新
+            updateInfoAndTheoryPath();
+            // 偏移归零, 但为了视野舒适, 基于原点偏移设为 (0,0)，画图自动以粒子为中心？
+            offsetX = 0; offsetY = 0;
+            // 暂停时重置还可以确保动画流畅
+            if(!paused && animationId === null) startAnimation();
+        }
+        
+        // 清空轨迹但保持物理状态
+        function clearTrail() {
+            trailPoints = [{x: x, y: y}];
+        }
+        
+        // 参数改变时调用 (更新全局变量，重置模拟)
+        function onParametersChanged() {
+            E = parseFloat(E_slider.value);
+            B = parseFloat(B_slider.value);
+            v0_x = parseFloat(v0_slider.value);
+            E_val.innerText = E.toFixed(2);
+            B_val.innerText = B.toFixed(2);
+            v0_val.innerText = v0_x.toFixed(2);
+            // 边界限制 B>0
+            if(B<0.3) B=0.3;
+            // 重置全部物理
+            resetSimulation();
+            // 强制刷新理论轨迹
+            generateTheoryTrajectory();
+            needUpdateTheory = false;
+        }
+        
+        // 绘制场景 (世界坐标 -> canvas坐标，带动态偏移保证粒子在视野中央)
+        function draw() {
+            if (!canvas || !ctx) return;
+            const w = canvas.clientWidth;
+            const h = canvas.clientHeight;
+            // 设置canvas实际分辨率
+            canvas.width = w;
+            canvas.height = h;
+            ctx.clearRect(0, 0, w, h);
+            
+            // 动态偏移: 让粒子始终出现在画面中央附近 (跟随效果)
+            // 但稍微限制最大偏移，避免跳跃过大
+            let targetOffsetX = x;
+            let targetOffsetY = y;
+            // 平滑跟随 (加权)
+            offsetX = offsetX * 0.92 + targetOffsetX * 0.08;
+            offsetY = offsetY * 0.92 + targetOffsetY * 0.08;
+            // 绘制参考网格 (世界坐标系)
+            const step = 1.0;
+            ctx.save();
+            ctx.strokeStyle = "#2d3a5e";
+            ctx.lineWidth = 0.6;
+            // 网格绘制 (世界坐标范围)
+            const startX = offsetX - w/2/scale;
+            const endX = offsetX + w/2/scale;
+            const startY = offsetY - h/2/scale;
+            const endY = offsetY + h/2/scale;
+            ctx.beginPath();
+            for(let gx = Math.floor(startX); gx <= Math.ceil(endX); gx+=step){
+                let sx = w/2 + (gx - offsetX)*scale;
+                ctx.moveTo(sx, 0);
+                ctx.lineTo(sx, h);
+            }
+            for(let gy = Math.floor(startY); gy <= Math.ceil(endY); gy+=step){
+                let sy = h/2 - (gy - offsetY)*scale;
+                ctx.moveTo(0, sy);
+                ctx.lineTo(w, sy);
+            }
+            ctx.strokeStyle = "#2a3a5e80";
+            ctx.stroke();
+            // 坐标轴
+            ctx.beginPath();
+            let originX = w/2 + (0 - offsetX)*scale;
+            let originY = h/2 - (0 - offsetY)*scale;
+            ctx.moveTo(0, originY); ctx.lineTo(w, originY);
+            ctx.moveTo(originX, 0); ctx.lineTo(originX, h);
+            ctx.strokeStyle = "#5f7f9e";
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+            
+            // 绘制理论配速参考轨迹 (淡紫色虚线)
+            if(theoryPathPoints.length > 1){
+                ctx.beginPath();
+                ctx.setLineDash([6, 8]);
+                ctx.strokeStyle = "#a855f7cc";
+                ctx.lineWidth = 1.8;
+                let first = true;
+                for(let pt of theoryPathPoints){
+                    let px_can = w/2 + (pt.x - offsetX)*scale;
+                    let py_can = h/2 - (pt.y - offsetY)*scale;
+                    if(first){ ctx.moveTo(px_can, py_can); first=false; }
+                    else { ctx.lineTo(px_can, py_can); }
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // 绘制轨迹 (实线，亮蓝色)
+            if(trailPoints.length > 1){
+                ctx.beginPath();
+                ctx.strokeStyle = "#3b82f6";
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
+                for(let i=0;i<trailPoints.length;i++){
+                    let px_can = w/2 + (trailPoints[i].x - offsetX)*scale;
+                    let py_can = h/2 - (trailPoints[i].y - offsetY)*scale;
+                    if(i===0) ctx.moveTo(px_can, py_can);
+                    else ctx.lineTo(px_can, py_can);
+                }
+                ctx.stroke();
+            }
+            
+            // 绘制粒子 (橙色发光)
+            let particleX = w/2 + (x - offsetX)*scale;
+            let particleY = h/2 - (y - offsetY)*scale;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = "#f97316";
+            ctx.beginPath();
+            ctx.arc(particleX, particleY, 7, 0, 2*Math.PI);
+            ctx.fillStyle = "#f97316";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(particleX, particleY, 3, 0, 2*Math.PI);
+            ctx.fillStyle = "white";
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // 绘制漂移速度矢量 (绿色)
+            const { v_d } = computeTheoryParams();
+            const vecLen = Math.min(45, Math.abs(v_d)*scale*0.4);
+            if(vecLen > 1 && Math.abs(v_d) > 0.05){
+                let endX_vec = particleX + (v_d>0? vecLen : -vecLen);
+                let endY_vec = particleY;
+                ctx.beginPath();
+                ctx.moveTo(particleX, particleY);
+                ctx.lineTo(endX_vec, endY_vec);
+                ctx.strokeStyle = "#10b981";
+                ctx.lineWidth = 2.2;
+                ctx.stroke();
+                // 箭头
+                let angle = v_d>0 ? 0 : Math.PI;
+                let arrX = endX_vec + (v_d>0? -6 : 6);
+                let arrY = endY_vec;
+                ctx.beginPath();
+                ctx.moveTo(endX_vec, endY_vec);
+                ctx.lineTo(arrX-3, arrY-4);
+                ctx.lineTo(arrX-3, arrY+4);
+                ctx.fillStyle = "#10b981";
+                ctx.fill();
+            }
+            
+            // 绘制电场方向示意 (带文本)
+            ctx.font = "bold 14px 'Segoe UI'";
+            ctx.fillStyle = "#ffd966";
+            ctx.shadowBlur = 0;
+            ctx.fillText("E ↑", w-45, 35);
+            ctx.fillStyle = "#94a3b8";
+            ctx.fillText("B ⊗", w-45, 65);
+            // 显示坐标
+            ctx.font = "12px monospace";
+            ctx.fillStyle = "#cbd5e6";
+            ctx.fillText(`(${x.toFixed(2)}, ${y.toFixed(2)})`, particleX+10, particleY-6);
+        }
+        
+        // 动画更新 (基于固定时间步长)
+        let lastFrameTime = 0;
+        const DT_FIXED = 0.016;  // 约60fps对应的物理步长
+        let accumulator = 0;
+        
+        function animate(nowMs) {
+            if(paused) {
+                draw();
+                animationId = requestAnimationFrame(animate);
+                return;
+            }
+            let dtSec = Math.min(0.033, (nowMs - lastFrameTime) / 1000);
+            if(dtSec <= 0) { lastFrameTime = nowMs; animationId = requestAnimationFrame(animate); draw(); return; }
+            lastFrameTime = nowMs;
+            // 固定步长物理稳定性
+            let simSteps = 1;
+            let subDt = dtSec;
+            if(dtSec > 0.025) { simSteps = 2; subDt = dtSec/simSteps; }
+            for(let step=0; step<simSteps; step++) {
+                rk4Step(subDt);
+                simTime += subDt;
+                // 记录轨迹
+                if(trailPoints.length === 0 || Math.hypot(trailPoints[trailPoints.length-1].x - x, trailPoints[trailPoints.length-1].y - y) > 0.05){
+                    trailPoints.push({x: x, y: y});
+                    if(trailPoints.length > MAX_TRAIL) trailPoints.shift();
+                }
+            }
+            // 更新理论轨迹动态延长（可选，保持视觉连续）
+            if(theoryPathPoints.length && simTime > 0.5){
+                generateTheoryTrajectory();
+            }
+            draw();
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        function startAnimation() {
+            if(animationId) cancelAnimationFrame(animationId);
+            lastFrameTime = performance.now();
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        // 绑定UI事件
+        function bindEvents() {
+            E_slider.addEventListener('input', () => { onParametersChanged(); });
+            B_slider.addEventListener('input', () => { onParametersChanged(); });
+            v0_slider.addEventListener('input', () => { onParametersChanged(); });
+            resetBtn.addEventListener('click', () => { resetSimulation(); });
+            clearTrailBtn.addEventListener('click', () => { clearTrail(); draw(); });
+            pauseBtn.addEventListener('click', () => { paused = !paused; if(!paused && !animationId) startAnimation(); draw(); });
+            window.addEventListener('resize', () => { draw(); });
+        }
+        
+        function init() {
+            bindEvents();
+            // 初始设置
+            E_slider.value = "1.2"; B_slider.value = "1.0"; v0_slider.value = "0.0";
+            onParametersChanged();
+            startAnimation();
+        }
+        
+        init();
+    })();
+</script>
+ </body>
+</html>

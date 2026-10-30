@@ -1,0 +1,13 @@
+# Local Caddy deployment configuration
+/Caddyfile
+/Caddyfile.*
+
+# Local backups and archives
+/fixed_v1/
+/.git1/
+*.zip
+
+# Local environment secrets; keep shareable examples
+.env
+.env.*
+!.env.example

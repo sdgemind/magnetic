@@ -1,0 +1,1548 @@
+<!doctype html>
+<html lang="zh-CN">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>动态圆模型交互演示 — 平移圆 · 旋转圆 · 放缩圆</title>
+  <style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #0d1018;
+    color: #e8e8ed;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px;
+  }
+  h1 {
+    font-size: 1.5em;
+    font-weight: 600;
+    margin-bottom: 4px;
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+  }
+  .subtitle {
+    color: #777;
+    font-size: 0.8em;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .model-cards {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .model-card {
+    background: #171b26;
+    border: 2px solid #232838;
+    border-radius: 12px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-align: center;
+    min-width: 130px;
+  }
+  .model-card:hover { border-color: #4facfe44; background: #1b2030; }
+  .model-card.active {
+    border-color: #4facfe;
+    background: #162030;
+    box-shadow: 0 0 18px #4facfe22;
+  }
+  .model-card .icon { font-size: 1.6em; margin-bottom: 4px; }
+  .model-card .name { font-size: 0.95em; font-weight: 600; }
+  .model-card .desc { font-size: 0.7em; color: #777; margin-top: 3px; line-height: 1.4; }
+  .model-card.active .desc { color: #7ab8ff; }
+
+  .sub-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .sub-tab {
+    background: #171b26;
+    border: 1px solid #232838;
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-size: 0.8em;
+    cursor: pointer;
+    color: #999;
+    transition: all 0.2s;
+  }
+  .sub-tab:hover { border-color: #4facfe55; color: #bbb; }
+  .sub-tab.active {
+    background: #1a2a3f;
+    border-color: #4facfe;
+    color: #4facfe;
+    font-weight: 600;
+  }
+
+  .main-area {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    max-width: 1080px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .canvas-wrap {
+    background: #111520;
+    border-radius: 14px;
+    border: 1px solid #1e2333;
+    padding: 8px;
+    position: relative;
+  }
+  canvas { display: block; border-radius: 8px; }
+
+  .control-panel {
+    width: 280px;
+    background: #171b26;
+    border-radius: 14px;
+    border: 1px solid #1e2333;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 560px;
+    overflow-y: auto;
+  }
+  .control-panel::-webkit-scrollbar { width: 5px; }
+  .control-panel::-webkit-scrollbar-thumb { background: #2a2e3d; border-radius: 3px; }
+  .control-panel h3 {
+    font-size: 0.85em;
+    color: #4facfe;
+    border-bottom: 1px solid #232838;
+    padding-bottom: 7px;
+    margin-bottom: 2px;
+  }
+  .ctrl-group { display: flex; flex-direction: column; gap: 5px; }
+  .ctrl-group label {
+    font-size: 0.78em;
+    color: #999;
+    display: flex;
+    justify-content: space-between;
+  }
+  .ctrl-group label span { color: #4facfe; font-weight: 600; }
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 5px;
+    background: #232838;
+    border-radius: 3px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #4facfe;
+    cursor: pointer;
+    box-shadow: 0 0 6px #4facfe66;
+  }
+  .slider-hint {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65em;
+    color: #666;
+    margin-top: -2px;
+  }
+  .btn-row { display: flex; gap: 8px; }
+  .btn {
+    flex: 1;
+    padding: 8px 0;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.8em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #4facfe, #00c6fb);
+    color: #0a0e17;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-secondary {
+    background: #232838;
+    color: #ccc;
+  }
+  .btn-secondary:hover { background: #2e3448; }
+
+  .info-panel {
+    width: 100%;
+    max-width: 1080px;
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .info-card {
+    flex: 1;
+    min-width: 220px;
+    background: #171b26;
+    border-radius: 12px;
+    border: 1px solid #1e2333;
+    padding: 14px;
+  }
+  .info-card h4 {
+    font-size: 0.82em;
+    color: #4facfe;
+    margin-bottom: 8px;
+  }
+  .info-card ul {
+    list-style: none;
+    font-size: 0.78em;
+    color: #aaa;
+    line-height: 1.8;
+  }
+  .info-card ul li::before {
+    content: "▸ ";
+    color: #4facfe;
+  }
+  .info-card p {
+    font-size: 0.78em;
+    color: #aaa;
+    line-height: 1.7;
+  }
+  .formula {
+    background: #0d1018;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: "Courier New", monospace;
+    font-size: 0.78em;
+    color: #7ab8ff;
+    margin-top: 6px;
+    text-align: center;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.7em;
+    color: #888;
+  }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .legend-line {
+    width: 16px; height: 3px;
+    display: inline-block;
+    border-radius: 2px;
+  }
+  .field-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #0d1018;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.72em;
+    color: #7ab8ff;
+    margin-top: 4px;
+  }
+  .divider {
+    height: 1px;
+    background: #232838;
+    margin: 4px 0;
+  }
+  .section-title {
+    font-size: 0.75em;
+    color: #ffd93d;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  @media (max-width: 820px) {
+    .main-area { flex-direction: column; align-items: center; }
+    .control-panel { width: 100%; max-width: 540px; }
+    canvas { width: 100%; height: auto; }
+  }
+</style>
+  <meta name="copyright" content="学科网（zxxk.com）版权所有">
+  <meta name="signature" content="QQABBYo15ggwghSACD5qUwEgC0kYkpAhLIoMBUCaOARDQIFAFAA=">
+ </head>
+ <body>
+  <h1>动态圆模型交互演示</h1>
+  <p class="subtitle">平移圆 · 旋转圆 · 放缩圆 — 带电粒子在有界匀强磁场中的临界问题</p>
+  <div class="model-cards" id="modelCards">
+   <div class="model-card active" data-model="translate">
+    <div class="icon">
+     ⇢
+    </div>
+    <div class="name">
+     平移圆
+    </div>
+    <div class="desc">
+     速度大小方向相同 <br>
+      入射点不同
+    </div>
+   </div>
+   <div class="model-card" data-model="rotate">
+    <div class="icon">
+     ↻
+    </div>
+    <div class="name">
+     旋转圆
+    </div>
+    <div class="desc">
+     速度大小相同 <br>
+      方向不同 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAkCAIAAADpU+bJAAAAkElEQVR42u1UQQ6AMAjr/x9djInGCQW2O8QYPLSFrhN2F5e3/Iz908DOiu5BoOR/BCrYT58ZdyAV6yAXkYP4giKmkrUWf2SeFf4x2UWMhpLe2i2ifm2E71Ha3ocC3di1O19+6vBQ2eHxu5lf6aAmFzpZkLFx+JawC3xvWMS3ydPKrf/cuRKn/5/BD37wg3/rArFY0rfOR3NUAAAAAElFTkSuQmCC" style="position: absolute; left: -99999px; top: -99999px; opacity: 0; pointer-events: none; width: 1px; height: 1px;">
+    </div>
+   </div>
+   <div class="model-card" data-model="scale">
+    <div class="icon">
+     ◎
+    </div>
+    <div class="name">
+     放缩圆
+    </div>
+    <div class="desc">
+     速度方向相同 <br>
+      大小不同
+    </div>
+   </div>
+  </div>
+  <div class="sub-tabs" id="subTabs" style="display:none">
+   <div class="sub-tab active" data-sub="board">
+    长板边界
+   </div>
+   <div class="sub-tab" data-sub="circle">
+    圆形边界
+   </div>
+  </div>
+  <div class="main-area">
+   <div class="canvas-wrap">
+    <canvas id="cv" width="700" height="500"></canvas>
+   </div>
+   <div class="control-panel">
+    <h3 id="panelTitle">平移圆 — 控制面板</h3>
+    <div class="ctrl-group" id="ctrlTranslate"><label>入射点位置 <span id="valOffset">中</span></label> <input type="range" id="sliderOffset" min="0" max="100" value="50">
+    </div>
+    <div class="ctrl-group" id="ctrlRotate" style="display:none"><label>速度方向角 <span id="valAngle">180°（向左）</span></label> <input type="range" id="sliderAngle" min="180" max="540" value="180" step="1">
+     <div class="slider-hint"><span>← 向左（起）</span> <span>转360°</span> <span>向左（终）→</span>
+     </div>
+    </div>
+    <div class="divider" id="divBoard" style="display:none"></div>
+    <div class="section-title" id="titleBoard" style="display:none">
+     — 长板参数（自由移动） —
+    </div>
+    <div class="ctrl-group" id="ctrlBoardX" style="display:none"><label>板水平位置 X <span id="valBoardX">350</span></label> <input type="range" id="sliderBoardX" min="60" max="640" value="350" step="1">
+    </div>
+    <div class="ctrl-group" id="ctrlBoardY" style="display:none"><label>板垂直位置 Y <span id="valBoardY">160</span></label> <input type="range" id="sliderBoardY" min="60" max="450" value="160" step="1">
+    </div>
+    <div class="ctrl-group" id="ctrlBoardAngle" style="display:none"><label>板旋转角 <span id="valBoardAngle">0°</span></label> <input type="range" id="sliderBoardAngle" min="0" max="180" value="0" step="1">
+     <div class="slider-hint"><span>水平</span> <span>垂直</span> <span>水平</span>
+     </div>
+    </div>
+    <div class="ctrl-group" id="ctrlBoardGap" style="display:none"><label>板间隙 <span id="valBoardGap">0</span></label> <input type="range" id="sliderBoardGap" min="0" max="220" value="0" step="1">
+     <div class="slider-hint"><span>完整板</span> <span>断开</span>
+     </div>
+    </div>
+    <div class="ctrl-group" id="ctrlScale" style="display:none"><label>轨迹半径 R <span id="valScale">120</span></label> <input type="range" id="sliderScale" min="40" max="200" value="120" step="1">
+     <div class="slider-hint"><span>小</span> <span>临界85 / 150</span> <span>大</span>
+     </div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" id="btnPlay">▶ 自动演示</button> <button class="btn btn-secondary" id="btnReset">重置</button>
+    </div>
+    <div class="formula" id="formulaText">
+     R = mv₀ / qB = 常数
+    </div>
+    <div class="field-badge">
+     磁场 B：垂直纸面向内（⊗）· 粒子：带正电
+    </div>
+    <div class="legend">
+     <div class="legend-item"><span class="legend-dot" style="background:#00f2fe"></span>粒子
+     </div>
+     <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b"></span>圆心
+     </div>
+     <div class="legend-item"><span class="legend-line" style="background:#4facfe"></span>轨迹
+     </div>
+     <div class="legend-item"><span class="legend-line" style="background:#ffd93d"></span>板
+     </div>
+    </div>
+   </div>
+  </div>
+  <div class="info-panel" id="infoPanel"></div>
+  <script>
+// ==================== 全局 ====================
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
+
+let state = {
+  model: 'translate',
+  sub: 'board',
+  translateY: 0.5,
+  rotateAngle: 180,
+  scaleR: 120,
+  // 长板参数（自由移动）
+  boardX: 350,
+  boardY: 160,         // 改到入射点上方
+  boardAngle: 0,       // 度
+  boardGap: 0,         // px
+  animating: false,
+  animTime: 0,
+};
+
+const COL = {
+  bg: '#111520',
+  grid: '#1a1f2e',
+  field: 'rgba(79,172,254,0.055)',
+  fieldBorder: 'rgba(79,172,254,0.55)',
+  fieldCross: 'rgba(79,172,254,0.28)',
+  ghost: 'rgba(79,172,254,0.13)',
+  arc: '#00e0ff',
+  arcGlow: 'rgba(0,224,255,0.35)',
+  center: '#ff6b6b',
+  centerDim: 'rgba(255,107,107,0.3)',
+  centerLine: 'rgba(255,107,107,0.28)',
+  particle: '#00f2fe',
+  board: '#ffd93d',
+  boardGlow: 'rgba(255,217,61,0.35)',
+  boardEdge: '#ff9f43',
+  envelope: 'rgba(0,242,254,0.07)',
+  envelopeBorder: 'rgba(0,242,254,0.28)',
+  critical1: '#ff9f43',
+  critical2: '#e056fd',
+  text: '#777',
+  textBright: '#aaa',
+};
+
+// ==================== 工具函数 ====================
+function drawBG() {
+  ctx.fillStyle = COL.bg;
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = COL.grid;
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += 40) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+}
+
+function drawFieldCrosses(x1, y1, x2, y2) {
+  ctx.strokeStyle = COL.fieldCross;
+  ctx.lineWidth = 1;
+  const step = 30;
+  for (let x = x1 + step / 2; x < x2; x += step) {
+    for (let y = y1 + step / 2; y < y2; y += step) {
+      const s = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(x - s, y - s); ctx.lineTo(x + s, y + s);
+      ctx.moveTo(x + s, y - s); ctx.lineTo(x - s, y + s);
+      ctx.stroke();
+    }
+  }
+}
+
+function drawFieldRect(x1, y1, x2, y2, label) {
+  ctx.fillStyle = COL.field;
+  ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+  drawFieldCrosses(x1, y1, x2, y2);
+  ctx.strokeStyle = COL.fieldBorder;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+  if (label !== false) {
+    ctx.fillStyle = 'rgba(79,172,254,0.55)';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('匀强磁场 B 垂直纸面向内 ⊗', x1 + 10, y1 + 18);
+  }
+}
+
+function drawGhostCircle(cx, cy, r) {
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = COL.ghost;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function drawCenterDot(cx, cy, dim) {
+  ctx.beginPath();
+  ctx.arc(cx, cy, dim ? 2.5 : 3.5, 0, Math.PI * 2);
+  ctx.fillStyle = dim ? COL.centerDim : COL.center;
+  ctx.fill();
+}
+
+function drawParticleDot(x, y, color, r) {
+  ctx.beginPath();
+  ctx.arc(x, y, r || 5, 0, Math.PI * 2);
+  ctx.fillStyle = color || COL.particle;
+  ctx.shadowColor = color || COL.particle;
+  ctx.shadowBlur = 10;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+function drawArcPath(pts, color, lw) {
+  if (pts.length < 2) return;
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) {
+    ctx.lineTo(pts[i].x, pts[i].y);
+  }
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lw || 2.5;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+}
+
+function drawArrow(x1, y1, x2, y2, color, lw) {
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const len = 10;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lw || 2;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - len * Math.cos(angle - 0.4), y2 - len * Math.sin(angle - 0.4));
+  ctx.lineTo(x2 - len * Math.cos(angle + 0.4), y2 - len * Math.sin(angle + 0.4));
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+function traceArc(cx, cy, r, theta0, stopFn, maxSteps) {
+  const pts = [];
+  let theta = theta0;
+  const step = 0.02;
+  const maxN = maxSteps || 600;
+  for (let i = 0; i < maxN; i++) {
+    const x = cx + r * Math.cos(theta);
+    const y = cy + r * Math.sin(theta);
+    pts.push({ x, y });
+    if (stopFn && i > 0 && stopFn(x, y)) break;
+    theta -= step;
+  }
+  return pts;
+}
+
+function centerFromAlpha(ox, oy, R, alpha) {
+  return { cx: ox + R * Math.sin(alpha), cy: oy - R * Math.cos(alpha) };
+}
+
+function normalizeAngle(deg) { return ((deg % 360) + 360) % 360; }
+
+function angleLabel(deg) {
+  const d = normalizeAngle(deg);
+  const labels = ['向右','右下','向下','左下','向左','左上','向上','右上'];
+  const idx = Math.round(d / 45) % 8;
+  const center = idx * 45;
+  let diff = Math.abs(d - center);
+  if (diff > 180) diff = 360 - diff;
+  if (diff <= 22.5) return labels[idx];
+  return '';
+}
+
+// ==================== 板几何工具 ====================
+function worldToBoard(px, py, bcx, bcy, theta) {
+  const dx = px - bcx;
+  const dy = py - bcy;
+  const cosT = Math.cos(theta), sinT = Math.sin(theta);
+  return {
+    u: dx * cosT + dy * sinT,
+    v: -dx * sinT + dy * cosT
+  };
+}
+
+function checkHitBoard(px, py, bcx, bcy, theta, len, gap, tol) {
+  const t = tol || 3.5;
+  const { u, v } = worldToBoard(px, py, bcx, bcy, theta);
+  if (Math.abs(v) > t) return null;
+  const halfL = len / 2;
+  const halfG = gap / 2;
+  if (Math.abs(u) > halfL) return null;
+  if (gap > 1 && Math.abs(u) < halfG) return null;
+  return { u, v };
+}
+
+// ==================== 平移圆 ====================
+const TR = {
+  field: { x1: 260, y1: 60, x2: 660, y2: 440 },
+  launchX: 170,
+  R: 75,
+  pyMin: 150,
+  pyMax: 400,
+};
+
+function drawTranslate() {
+  const py = TR.pyMin + (TR.pyMax - TR.pyMin) * state.translateY;
+  const bx = TR.field.x1;
+  const topY = TR.field.y1;
+
+  drawFieldRect(TR.field.x1, TR.field.y1, TR.field.x2, TR.field.y2);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(TR.launchX, TR.pyMin - 40);
+  ctx.lineTo(TR.launchX, TR.pyMax + 40);
+  ctx.stroke();
+  ctx.fillStyle = COL.text;
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('线状粒子源', TR.launchX - 6, TR.pyMin - 50);
+
+  const nGhost = 9;
+  for (let i = 0; i <= nGhost; i++) {
+    const t = i / nGhost;
+    const p = TR.pyMin + (TR.pyMax - TR.pyMin) * t;
+    drawGhostCircle(bx, p - TR.R, TR.R);
+    drawCenterDot(bx, p - TR.R, true);
+  }
+
+  ctx.strokeStyle = COL.centerLine;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(bx, TR.pyMin - TR.R);
+  ctx.lineTo(bx, TR.pyMax - TR.R);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  const cx = bx, cy = py - TR.R;
+
+  ctx.strokeStyle = COL.particle;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(TR.launchX, py);
+  ctx.lineTo(bx, py);
+  ctx.stroke();
+
+  drawArrow(TR.launchX + 8, py - 12, TR.launchX + 45, py - 12, COL.particle, 2);
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, TR.R, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(79,172,254,0.25)';
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+
+  const s = (topY - py + TR.R) / TR.R;
+  let endAngle = -Math.PI / 2;
+  let hitBoard = false;
+  if (s >= -1 && s <= 1) {
+    const t = Math.asin(s);
+    if (t < Math.PI / 2 - 0.001) {
+      endAngle = t;
+      hitBoard = true;
+    }
+  }
+
+  const pts = [];
+  let theta = Math.PI / 2;
+  const step = 0.02;
+  while (theta > endAngle - 0.001) {
+    pts.push({ x: cx + TR.R * Math.cos(theta), y: cy + TR.R * Math.sin(theta) });
+    theta -= step;
+    if (theta < endAngle) break;
+  }
+  pts.push({ x: cx + TR.R * Math.cos(endAngle), y: cy + TR.R * Math.sin(endAngle) });
+
+  ctx.shadowColor = COL.arcGlow;
+  ctx.shadowBlur = 8;
+  drawArcPath(pts, COL.arc, 3);
+  ctx.shadowBlur = 0;
+
+  ctx.strokeStyle = COL.centerDim;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(bx, py);
+  ctx.lineTo(cx, cy);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = COL.center;
+  ctx.font = 'bold 11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('R', bx + 6, cy + TR.R / 2 + 4);
+
+  drawCenterDot(cx, cy);
+  drawParticleDot(bx, py, COL.particle, 4.5);
+
+  const ex = cx + TR.R * Math.cos(endAngle);
+  const ey = cy + TR.R * Math.sin(endAngle);
+  drawParticleDot(ex, ey, hitBoard ? COL.board : '#ff9a56', 5);
+
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  if (hitBoard) {
+    ctx.fillStyle = COL.board;
+    ctx.fillText('击中上边界', ex, ey - 12);
+  } else {
+    ctx.fillStyle = '#ff9a56';
+    ctx.fillText('从边界射出', ex, ey - 12);
+  }
+
+  ctx.fillStyle = COL.text;
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('入射点 y = ' + Math.round(py), TR.launchX + 5, py + 20);
+}
+
+// ==================== 旋转圆 — 长板边界（自由移动/旋转/断开） ====================
+// 入射点上移至 (350, 250)，包络圆从 y=100 到 y=400，完整显示在画布中央
+const RO_B = {
+  ox: 350, oy: 250,
+  R: 75,
+  boardLen: 620,
+};
+
+function drawRotateBoard() {
+  const { ox, oy, R } = RO_B;
+  const dNorm = normalizeAngle(state.rotateAngle);
+  const alpha = dNorm * Math.PI / 180;
+
+  // 板参数（自由移动）
+  const bcx = state.boardX;
+  const bcy = state.boardY;
+  const bTheta = state.boardAngle * Math.PI / 180;
+  const bLen = RO_B.boardLen;
+  const bGap = state.boardGap;
+  const halfL = bLen / 2;
+  const halfG = bGap / 2;
+
+  const cosT = Math.cos(bTheta);
+  const sinT = Math.sin(bTheta);
+
+  // ===== 包络圆 =====
+  ctx.beginPath();
+  ctx.arc(ox, oy, 2 * R, 0, Math.PI * 2);
+  ctx.fillStyle = COL.envelope;
+  ctx.fill();
+  ctx.strokeStyle = COL.envelopeBorder;
+  ctx.lineWidth = 1.2;
+  ctx.setLineDash([5, 5]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = 'rgba(0,242,254,0.5)';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('包络圆 2R（粒子可到达区域）', ox, oy + 2 * R + 18);
+
+  // ===== 绘制板（两段） =====
+  function drawSegment(u1, u2) {
+    const x1 = bcx + u1 * cosT;
+    const y1 = bcy + u1 * sinT;
+    const x2 = bcx + u2 * cosT;
+    const y2 = bcy + u2 * sinT;
+    ctx.strokeStyle = COL.boardGlow;
+    ctx.lineWidth = 14;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.strokeStyle = COL.board;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+  }
+
+  if (bGap > 1) {
+    drawSegment(-halfL, -halfG);
+    drawSegment(halfG, halfL);
+  } else {
+    drawSegment(-halfL, halfL);
+  }
+
+  // 端点标记
+  const end1 = { x: bcx - halfL * cosT, y: bcy - halfL * sinT };
+  const end2 = { x: bcx + halfL * cosT, y: bcy + halfL * sinT };
+  ctx.fillStyle = COL.board;
+  ctx.beginPath(); ctx.arc(end1.x, end1.y, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(end2.x, end2.y, 3, 0, Math.PI * 2); ctx.fill();
+
+  // 板中心标记
+  ctx.beginPath(); ctx.arc(bcx, bcy, 4, 0, Math.PI * 2);
+  ctx.fillStyle = COL.boardEdge;
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // 板标签
+  ctx.fillStyle = COL.board;
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('长板', end1.x - 40, end1.y - 10);
+  ctx.fillText('中心 (' + Math.round(bcx) + ',' + Math.round(bcy) + ')', bcx + 12, bcy + 16);
+
+  // 板间隙标注
+  if (bGap > 1) {
+    const gx1 = bcx - halfG * cosT;
+    const gy1 = bcy - halfG * sinT;
+    const gx2 = bcx + halfG * cosT;
+    const gy2 = bcy + halfG * sinT;
+    ctx.strokeStyle = 'rgba(255,159,67,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(gx1, gy1);
+    ctx.lineTo(gx2, gy2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const gmx = (gx1 + gx2) / 2 + Math.sin(bTheta) * 20;
+    const gmy = (gy1 + gy2) / 2 - Math.cos(bTheta) * 20;
+    ctx.fillStyle = COL.boardEdge;
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('间隙 ' + bGap, gmx, gmy);
+  }
+
+  // ===== 幽灵轨迹 =====
+  const nDir = 90;
+  const hitInfo = [];
+
+  for (let i = 0; i < nDir; i++) {
+    const a = (i / nDir) * Math.PI * 2;
+    const { cx, cy } = centerFromAlpha(ox, oy, R, a);
+    const theta0 = Math.atan2(oy - cy, ox - cx);
+
+    const stopFn = (x, y) => {
+      const hit = checkHitBoard(x, y, bcx, bcy, bTheta, bLen, bGap, 3);
+      if (hit) return true;
+      if (x < -50 || x > W + 50 || y < -50 || y > H + 50) return true;
+      return false;
+    };
+
+    const pts = traceArc(cx, cy, R, theta0, stopFn, 700);
+
+    const last = pts[pts.length - 1];
+    let hitThis = null;
+    if (last) {
+      const hit = checkHitBoard(last.x, last.y, bcx, bcy, bTheta, bLen, bGap, 4);
+      if (hit) {
+        hitThis = { u: hit.u, x: last.x, y: last.y };
+        hitInfo.push(hitThis);
+      }
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let j = 1; j < pts.length; j++) ctx.lineTo(pts[j].x, pts[j].y);
+    ctx.strokeStyle = hitThis ? 'rgba(255,217,61,0.25)' : 'rgba(79,172,254,0.10)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  }
+
+  // ===== 高亮当前角度 =====
+  const { cx, cy } = centerFromAlpha(ox, oy, R, alpha);
+  const theta0 = Math.atan2(oy - cy, ox - cx);
+
+  const stopFn = (x, y) => {
+    const hit = checkHitBoard(x, y, bcx, bcy, bTheta, bLen, bGap, 3);
+    if (hit) return true;
+    if (x < -50 || x > W + 50 || y < -50 || y > H + 50) return true;
+    return false;
+  };
+  const pts = traceArc(cx, cy, R, theta0, stopFn, 700);
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(79,172,254,0.18)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.shadowColor = COL.arcGlow;
+  ctx.shadowBlur = 10;
+  drawArcPath(pts, COL.arc, 3);
+  ctx.shadowBlur = 0;
+
+  drawParticleDot(ox, oy, COL.particle, 6);
+
+  const vLen = 46;
+  drawArrow(ox, oy, ox + vLen * Math.cos(alpha), oy + vLen * Math.sin(alpha), COL.particle, 2.5);
+
+  drawCenterDot(cx, cy);
+
+  // ===== 打板范围（沿板方向） =====
+  if (hitInfo.length > 1) {
+    const uList = hitInfo.map(h => h.u);
+    const minU = Math.min(...uList);
+    const maxU = Math.max(...uList);
+
+    const hx1 = bcx + minU * cosT;
+    const hy1 = bcy + minU * sinT;
+    const hx2 = bcx + maxU * cosT;
+    const hy2 = bcy + maxU * sinT;
+
+    ctx.strokeStyle = 'rgba(255,217,61,0.5)';
+    ctx.lineWidth = 16;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(hx1, hy1);
+    ctx.lineTo(hx2, hy2);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+
+    ctx.beginPath(); ctx.arc(hx1, hy1, 6, 0, Math.PI * 2); ctx.fillStyle = COL.board; ctx.fill();
+    ctx.beginPath(); ctx.arc(hx2, hy2, 6, 0, Math.PI * 2); ctx.fillStyle = COL.board; ctx.fill();
+
+    const nx = -sinT, ny = cosT;
+    ctx.strokeStyle = COL.board;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(hx1 + nx * 30, hy1 + ny * 30);
+    ctx.lineTo(hx2 + nx * 30, hy2 + ny * 30);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(hx1 + nx * 26, hy1 + ny * 26);
+    ctx.lineTo(hx1 + nx * 34, hy1 + ny * 34);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(hx2 + nx * 26, hy2 + ny * 26);
+    ctx.lineTo(hx2 + nx * 34, hy2 + ny * 34);
+    ctx.stroke();
+
+    const midX = (hx1 + hx2) / 2 + nx * 45;
+    const midY = (hy1 + hy2) / 2 + ny * 45;
+    ctx.fillStyle = COL.board;
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('打板范围 Δu = ' + Math.round(maxU - minU) + ' px', midX, midY);
+  }
+
+  // ===== 圆心分布圆 =====
+  ctx.strokeStyle = COL.centerLine;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.arc(ox, oy, R, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = COL.center;
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('圆心分布圆 R', ox, oy - R - 8);
+
+  // ===== 状态文字 =====
+  const lbl = angleLabel(state.rotateAngle);
+  ctx.fillStyle = 'rgba(79,172,254,0.9)';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('v 方向：' + Math.round(dNorm) + '°' + (lbl ? '（' + lbl + '）' : ''), 20, 30);
+
+  const last = pts[pts.length - 1];
+  const isHit = last && checkHitBoard(last.x, last.y, bcx, bcy, bTheta, bLen, bGap, 4);
+  if (isHit) {
+    drawParticleDot(last.x, last.y, COL.board, 5);
+    ctx.fillStyle = COL.board;
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('击中！', last.x, last.y - 12);
+  } else if (last) {
+    drawParticleDot(last.x, last.y, '#ff9a56', 4.5);
+  }
+
+  ctx.fillStyle = 'rgba(79,172,254,0.7)';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('击中板的方向数：' + hitInfo.length + ' / ' + nDir, 20, 50);
+}
+
+// ==================== 旋转圆 — 圆形边界 ====================
+const RO_C = {
+  fieldCx: 460, fieldCy: 260, fieldR: 140,
+  ox: 370, oy: 230,
+  R: 70,
+};
+
+function drawRotateCircle() {
+  const { fieldCx, fieldCy, fieldR, ox, oy, R } = RO_C;
+  const dNorm = normalizeAngle(state.rotateAngle);
+  const alpha = dNorm * Math.PI / 180;
+
+  ctx.beginPath();
+  ctx.arc(fieldCx, fieldCy, fieldR, 0, Math.PI * 2);
+  ctx.fillStyle = COL.field;
+  ctx.fill();
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(fieldCx, fieldCy, fieldR, 0, Math.PI * 2);
+  ctx.clip();
+  drawFieldCrosses(fieldCx - fieldR, fieldCy - fieldR, fieldCx + fieldR, fieldCy + fieldR);
+  ctx.restore();
+
+  ctx.strokeStyle = COL.fieldBorder;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(fieldCx, fieldCy, fieldR, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(79,172,254,0.5)';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('圆形磁场区域', fieldCx, fieldCy - fieldR - 12);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(fieldCx, fieldCy, fieldR, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.beginPath();
+  ctx.arc(ox, oy, 2 * R, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,242,254,0.15)';
+  ctx.fill();
+  ctx.restore();
+
+  ctx.beginPath();
+  ctx.arc(ox, oy, 2 * R, 0, Math.PI * 2);
+  ctx.strokeStyle = COL.envelopeBorder;
+  ctx.lineWidth = 1.2;
+  ctx.setLineDash([4, 5]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  const nDir = 72;
+  const inField = (x, y) => {
+    const dx = x - fieldCx, dy = y - fieldCy;
+    return dx * dx + dy * dy <= fieldR * fieldR + 1;
+  };
+
+  for (let i = 0; i < nDir; i++) {
+    const a = (i / nDir) * Math.PI * 2;
+    const { cx, cy } = centerFromAlpha(ox, oy, R, a);
+    const theta0 = Math.atan2(oy - cy, ox - cx);
+
+    const pts = traceArc(cx, cy, R, theta0, (x, y) => !inField(x, y), 500);
+
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let j = 1; j < pts.length; j++) ctx.lineTo(pts[j].x, pts[j].y);
+    ctx.strokeStyle = 'rgba(79,172,254,0.12)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  }
+
+  const { cx, cy } = centerFromAlpha(ox, oy, R, alpha);
+  const theta0 = Math.atan2(oy - cy, ox - cx);
+
+  const pts = traceArc(cx, cy, R, theta0, (x, y) => !inField(x, y), 500);
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(79,172,254,0.22)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.shadowColor = COL.arcGlow;
+  ctx.shadowBlur = 10;
+  drawArcPath(pts, COL.arc, 3);
+  ctx.shadowBlur = 0;
+
+  drawCenterDot(cx, cy);
+  drawParticleDot(ox, oy, COL.particle, 6);
+
+  const vLen = 46;
+  drawArrow(ox, oy, ox + vLen * Math.cos(alpha), oy + vLen * Math.sin(alpha), COL.particle, 2.5);
+
+  const last = pts[pts.length - 1];
+  if (last) {
+    drawParticleDot(last.x, last.y, '#ff9a56', 5);
+
+    ctx.strokeStyle = COL.centerDim;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(cx, cy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#ff9a56';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('射出点', last.x, last.y - 12);
+  }
+
+  ctx.strokeStyle = COL.centerLine;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.arc(ox, oy, R, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = COL.center;
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('圆心分布圆 R', ox, oy - R - 8);
+
+  ctx.fillStyle = 'rgba(0,242,254,0.55)';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('扫过区域（包络圆 ∩ 磁场）', fieldCx - 60, fieldCy + fieldR + 16);
+
+  const lbl = angleLabel(state.rotateAngle);
+  ctx.fillStyle = 'rgba(79,172,254,0.9)';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('v 方向：' + Math.round(dNorm) + '°' + (lbl ? '（' + lbl + '）' : ''), 20, 30);
+}
+
+// ==================== 放缩圆 ====================
+const SC = {
+  field: { x1: 280, y1: 70, x2: 430, y2: 420 },
+  ox: 280, oy: 245,
+  Rc1: 87.5,
+  Rc2: 150,
+};
+
+function traceParticleArc(cx, cy, R, rect) {
+  const pts = [];
+  let theta = Math.PI / 2;
+  const step = 0.012;
+  const maxIter = 1200;
+  const eps = 0.8;
+  for (let i = 0; i < maxIter; i++) {
+    const x = cx + R * Math.cos(theta);
+    const y = cy + R * Math.sin(theta);
+    if (i > 0) {
+      if (x < rect.x1 - eps || x > rect.x2 + eps || y < rect.y1 - eps || y > rect.y2 + eps) {
+        pts.push({ x, y });
+        break;
+      }
+    }
+    pts.push({ x, y });
+    theta -= step;
+  }
+  return pts;
+}
+
+function drawScale() {
+  const f = SC.field;
+  const ox = SC.ox, oy = SC.oy;
+  const R = state.scaleR;
+
+  drawFieldRect(f.x1, f.y1, f.x2, f.y2);
+
+  ctx.strokeStyle = COL.centerLine;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 5]);
+  ctx.beginPath();
+  ctx.moveTo(ox, oy);
+  ctx.lineTo(ox, f.y1 - 30);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = COL.center;
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('圆心所在直线 ⊥ v', ox + 8, f.y1 - 10);
+
+  const ghostRadii = [50, 70, SC.Rc1, 110, SC.Rc2, 180];
+  for (const rr of ghostRadii) {
+    if (Math.abs(rr - R) < 2) continue;
+    const ccx = ox, ccy = oy - rr;
+    const pts = traceParticleArc(ccx, ccy, rr, f);
+    if (pts.length < 2) continue;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let j = 1; j < pts.length; j++) ctx.lineTo(pts[j].x, pts[j].y);
+    ctx.strokeStyle = 'rgba(79,172,254,0.14)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  }
+
+  {
+    const rr = SC.Rc1;
+    const ccx = ox, ccy = oy - rr;
+    const pts = traceParticleArc(ccx, ccy, rr, f);
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let j = 1; j < pts.length; j++) ctx.lineTo(pts[j].x, pts[j].y);
+    ctx.strokeStyle = 'rgba(255,159,67,0.65)';
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([5, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = COL.critical1;
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('上边界相切 R = h/4', f.x1 + 6, f.y1 - 4);
+  }
+
+  {
+    const rr = SC.Rc2;
+    const ccx = ox, ccy = oy - rr;
+    const pts = traceParticleArc(ccx, ccy, rr, f);
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let j = 1; j < pts.length; j++) ctx.lineTo(pts[j].x, pts[j].y);
+    ctx.strokeStyle = 'rgba(224,86,253,0.65)';
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([5, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = COL.critical2;
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('右边界相切 R = w', f.x2 + 8, oy - rr + 4);
+  }
+
+  const cx = ox, cy = oy - R;
+  const pts = traceParticleArc(cx, cy, R, f);
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(79,172,254,0.18)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 4]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.shadowColor = COL.arcGlow;
+  ctx.shadowBlur = 10;
+  drawArcPath(pts, COL.arc, 3);
+  ctx.shadowBlur = 0;
+
+  ctx.strokeStyle = COL.centerDim;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(ox, oy);
+  ctx.lineTo(cx, cy);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = COL.center;
+  ctx.font = 'bold 11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('R = ' + Math.round(R), ox + 6, oy - R / 2);
+
+  drawCenterDot(cx, cy);
+  drawParticleDot(ox, oy, COL.particle, 5);
+
+  drawArrow(ox - 70, oy, ox - 20, oy, COL.particle, 2);
+  ctx.strokeStyle = COL.particle;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(ox - 80, oy);
+  ctx.lineTo(ox, oy);
+  ctx.stroke();
+
+  const last = pts[pts.length - 1];
+  if (last) {
+    let edge = '';
+    let color = '#ff9a56';
+    if (last.x < f.x1 + 4) { edge = '左边界射出'; color = '#4facfe'; }
+    else if (last.x > f.x2 - 4) { edge = '击中右边界'; color = COL.board; }
+    else if (last.y < f.y1 + 4) { edge = '击中上边界'; color = COL.board; }
+    else if (last.y > f.y2 - 4) { edge = '击中下边界'; color = COL.board; }
+
+    drawParticleDot(last.x, last.y, color, 5);
+
+    ctx.fillStyle = color;
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(edge, last.x, last.y - 14);
+  }
+
+  ctx.fillStyle = 'rgba(79,172,254,0.9)';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'left';
+  let status = '';
+  if (R < SC.Rc1) status = '状态：粒子从左侧边界射出';
+  else if (R < SC.Rc2) status = '状态：击中上边界';
+  else status = '状态：击中右边界';
+
+  ctx.fillText('R = ' + Math.round(R) + ' px  |  ' + status, 20, 30);
+
+  ctx.fillStyle = 'rgba(255,217,61,0.55)';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('R < 85 → 左侧射出 | 85 < R < 150 → 上边界 | R > 150 → 右边界', 20, H - 15);
+}
+
+// ==================== 主绘制 ====================
+function draw() {
+  drawBG();
+
+  if (state.model === 'translate') {
+    drawTranslate();
+  } else if (state.model === 'rotate') {
+    if (state.sub === 'board') drawRotateBoard();
+    else drawRotateCircle();
+  } else {
+    drawScale();
+  }
+}
+
+// ==================== 信息面板 ====================
+function updateInfo() {
+  const panel = document.getElementById('infoPanel');
+  const formula = document.getElementById('formulaText');
+  const title = document.getElementById('panelTitle');
+
+  if (state.model === 'translate') {
+    title.textContent = '平移圆 — 控制面板';
+    formula.textContent = 'R = mv₀/qB = 常数';
+    panel.innerHTML = `
+      <div class="info-card">
+        <h4>平移圆模型</h4>
+        <p>速度大小、方向均相同，入射点沿一条直线移动。各粒子轨迹圆半径相同，圆心分布在与入射点连线平行的同一直线上。</p>
+        <div class="formula">R 相同 · 圆心轨迹线 ∥ 入射点轨迹线</div>
+      </div>
+      <div class="info-card">
+        <h4>临界条件</h4>
+        <ul>
+          <li>轨迹圆与边界相切 → 恰好射出 / 不射出</li>
+          <li>运动时间最长 → 轨迹为半圆（圆心角 180°）</li>
+          <li>运动时间最短 → 弦长最短（圆心角最小）</li>
+        </ul>
+      </div>
+      <div class="info-card">
+        <h4>典型考法</h4>
+        <ul>
+          <li>线状粒子源从某边界射出的区域长度</li>
+          <li>运动时间的最长 / 最短问题</li>
+          <li>三角形或平行边界中的临界分析</li>
+        </ul>
+      </div>`;
+  } else if (state.model === 'rotate') {
+    title.textContent = '旋转圆 — 控制面板';
+    formula.textContent = '圆心分布圆 R · 包络圆 2R';
+    panel.innerHTML = `
+      <div class="info-card">
+        <h4>旋转圆模型</h4>
+        <p>速度大小一定、方向不同，入射点相同。轨迹圆半径相同，圆心分布在以入射点为圆心、半径 R 的圆上。</p>
+        <div class="formula">滑块从"向左(180°)"起旋转一整圈到 540°</div>
+      </div>
+      <div class="info-card">
+        <h4>长板参数可调（考点）</h4>
+        <ul>
+          <li><b>板位置自由移动</b>：X/Y 双向可调，可放在入射点的任意方位</li>
+          <li><b>板旋转角</b>：倾斜的板改变相切临界条件，需用几何关系重新求解</li>
+          <li><b>板间隙</b>：粒子可从间隙穿过，需分别计算两段板上各自被打到的范围</li>
+          <li><b>打板范围</b>：沿板方向高亮，由两端相切轨迹的击点确定</li>
+        </ul>
+      </div>
+      <div class="info-card">
+        <h4>典型考法</h4>
+        <ul>
+          <li>板在入射点上方 / 下方 / 侧方时的打板范围差异</li>
+          <li>倾斜板上的打板范围（需旋转坐标系）</li>
+          <li>带缝隙的板：能打到的粒子数占比</li>
+          <li>圆形磁场边界 + 旋转圆的极值问题</li>
+        </ul>
+      </div>`;
+  } else {
+    title.textContent = '放缩圆 — 控制面板';
+    formula.textContent = 'R ∝ v · 圆心在 ⊥v 的直线上';
+    panel.innerHTML = `
+      <div class="info-card">
+        <h4>放缩圆模型</h4>
+        <p>长方形有界磁场，粒子从左侧短边中点沿水平方向射入。速度方向相同、大小不同，轨迹圆在入射点处有公切线，圆心都在过入射点且垂直于 v 的直线上。</p>
+        <div class="formula">R = mv/qB · v 越大 → R 越大</div>
+      </div>
+      <div class="info-card">
+        <h4>临界条件（推导）</h4>
+        <ul>
+          <li><b>与上边界相切</b>：R = h/4（h 为磁场高度）</li>
+          <li><b>与右边界相切</b>：R = w（w 为磁场宽度）</li>
+          <li>R &lt; h/4：粒子从左侧边界射出</li>
+          <li>h/4 &lt; R &lt; w：粒子击中上边界</li>
+          <li>R &gt; w：粒子击中右边界</li>
+        </ul>
+      </div>
+      <div class="info-card">
+        <h4>典型考法</h4>
+        <ul>
+          <li>求能从某边界射出的速度范围</li>
+          <li>求恰好不射出的临界速度</li>
+          <li>利用弦切角、几何关系快速确定临界半径</li>
+          <li>多解问题（不同半径对应不同边界）</li>
+        </ul>
+      </div>`;
+  }
+}
+
+// ==================== 控制面板可见性 ====================
+function updateControlVisibility() {
+  const isTranslate = state.model === 'translate';
+  const isRotate = state.model === 'rotate';
+  const isScale = state.model === 'scale';
+  const isBoard = isRotate && state.sub === 'board';
+
+  document.getElementById('ctrlTranslate').style.display = isTranslate ? 'flex' : 'none';
+  document.getElementById('ctrlRotate').style.display = isRotate ? 'flex' : 'none';
+  document.getElementById('ctrlScale').style.display = isScale ? 'flex' : 'none';
+
+  document.getElementById('divBoard').style.display = isBoard ? 'block' : 'none';
+  document.getElementById('titleBoard').style.display = isBoard ? 'block' : 'none';
+  document.getElementById('ctrlBoardX').style.display = isBoard ? 'flex' : 'none';
+  document.getElementById('ctrlBoardY').style.display = isBoard ? 'flex' : 'none';
+  document.getElementById('ctrlBoardAngle').style.display = isBoard ? 'flex' : 'none';
+  document.getElementById('ctrlBoardGap').style.display = isBoard ? 'flex' : 'none';
+
+  document.getElementById('subTabs').style.display = isRotate ? 'flex' : 'none';
+}
+
+// ==================== 事件绑定 ====================
+document.getElementById('modelCards').addEventListener('click', e => {
+  const card = e.target.closest('.model-card');
+  if (!card) return;
+  document.querySelectorAll('.model-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+  state.model = card.dataset.model;
+
+  updateControlVisibility();
+  updateInfo();
+  draw();
+});
+
+document.getElementById('subTabs').addEventListener('click', e => {
+  const tab = e.target.closest('.sub-tab');
+  if (!tab) return;
+  document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  state.sub = tab.dataset.sub;
+  updateControlVisibility();
+  draw();
+});
+
+document.getElementById('sliderOffset').addEventListener('input', e => {
+  state.translateY = e.target.value / 100;
+  const pct = parseInt(e.target.value);
+  document.getElementById('valOffset').textContent =
+    pct < 25 ? '高' : pct < 50 ? '中高' : pct < 75 ? '中低' : '低';
+  draw();
+});
+
+document.getElementById('sliderAngle').addEventListener('input', e => {
+  state.rotateAngle = parseInt(e.target.value);
+  const dNorm = normalizeAngle(state.rotateAngle);
+  const lbl = angleLabel(state.rotateAngle);
+  document.getElementById('valAngle').textContent =
+    Math.round(dNorm) + '°' + (lbl ? '（' + lbl + '）' : '');
+  draw();
+});
+
+document.getElementById('sliderBoardX').addEventListener('input', e => {
+  state.boardX = parseInt(e.target.value);
+  document.getElementById('valBoardX').textContent = state.boardX;
+  draw();
+});
+
+document.getElementById('sliderBoardY').addEventListener('input', e => {
+  state.boardY = parseInt(e.target.value);
+  document.getElementById('valBoardY').textContent = state.boardY;
+  draw();
+});
+
+document.getElementById('sliderBoardAngle').addEventListener('input', e => {
+  state.boardAngle = parseInt(e.target.value);
+  document.getElementById('valBoardAngle').textContent = state.boardAngle + '°';
+  draw();
+});
+
+document.getElementById('sliderBoardGap').addEventListener('input', e => {
+  state.boardGap = parseInt(e.target.value);
+  document.getElementById('valBoardGap').textContent = state.boardGap;
+  draw();
+});
+
+document.getElementById('sliderScale').addEventListener('input', e => {
+  state.scaleR = parseInt(e.target.value);
+  document.getElementById('valScale').textContent = state.scaleR;
+  draw();
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  state.translateY = 0.5;
+  state.rotateAngle = 180;
+  state.scaleR = 120;
+  state.boardX = 350;
+  state.boardY = 160;
+  state.boardAngle = 0;
+  state.boardGap = 0;
+
+  document.getElementById('sliderOffset').value = 50;
+  document.getElementById('sliderAngle').value = 180;
+  document.getElementById('sliderScale').value = 120;
+  document.getElementById('sliderBoardX').value = 350;
+  document.getElementById('sliderBoardY').value = 160;
+  document.getElementById('sliderBoardAngle').value = 0;
+  document.getElementById('sliderBoardGap').value = 0;
+
+  document.getElementById('valOffset').textContent = '中';
+  document.getElementById('valAngle').textContent = '180°（向左）';
+  document.getElementById('valScale').textContent = '120';
+  document.getElementById('valBoardX').textContent = '350';
+  document.getElementById('valBoardY').textContent = '160';
+  document.getElementById('valBoardAngle').textContent = '0°';
+  document.getElementById('valBoardGap').textContent = '0';
+
+  state.animating = false;
+  document.getElementById('btnPlay').textContent = '▶ 自动演示';
+  draw();
+});
+
+// ==================== 自动动画 ====================
+function animate() {
+  if (!state.animating) return;
+  state.animTime += 0.018;
+
+  if (state.model === 'translate') {
+    state.translateY = 0.5 + 0.5 * Math.sin(state.animTime);
+    document.getElementById('sliderOffset').value = Math.round(state.translateY * 100);
+    const pct = Math.round(state.translateY * 100);
+    document.getElementById('valOffset').textContent =
+      pct < 25 ? '高' : pct < 50 ? '中高' : pct < 75 ? '中低' : '低';
+  } else if (state.model === 'rotate') {
+    state.rotateAngle += 1.6;
+    if (state.rotateAngle > 540) state.rotateAngle = 180;
+    document.getElementById('sliderAngle').value = Math.round(state.rotateAngle);
+    const dNorm = normalizeAngle(state.rotateAngle);
+    const lbl = angleLabel(state.rotateAngle);
+    document.getElementById('valAngle').textContent =
+      Math.round(dNorm) + '°' + (lbl ? '（' + lbl + '）' : '');
+  } else {
+    const t = (Math.sin(state.animTime * 0.7) + 1) / 2;
+    state.scaleR = Math.round(50 + t * 140);
+    document.getElementById('sliderScale').value = state.scaleR;
+    document.getElementById('valScale').textContent = state.scaleR;
+  }
+
+  draw();
+  requestAnimationFrame(animate);
+}
+
+document.getElementById('btnPlay').addEventListener('click', () => {
+  state.animating = !state.animating;
+  const btn = document.getElementById('btnPlay');
+  if (state.animating) {
+    btn.textContent = '⏸ 暂停演示';
+    animate();
+  } else {
+    btn.textContent = '▶ 自动演示';
+  }
+});
+
+// ==================== 初始化 ====================
+updateControlVisibility();
+updateInfo();
+draw();
+</script>
+ </body>
+</html>

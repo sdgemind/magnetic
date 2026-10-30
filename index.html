@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0a1422" />
+    <title>磁场实验室 · 交互物理</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="brand" href="./"
+        ><span class="brand-icon">B</span
+        ><span>磁场实验室<small>INTERACTIVE PHYSICS LAB</small></span></a
+      ><span class="header-note">观察 · 调节 · 理解</span
+      ><span class="live-tag">7 个交互实验</span>
+    </header>
+    <main>
+      <section class="intro">
+        <div>
+          <p class="eyebrow">ELECTROMAGNETISM / 电磁学</p>
+          <h1>让看不见的磁场，<span>变得直观。</span></h1>
+          <p>从一条轨迹到一个空间磁场，亲手探索电磁运动的规律。</p>
+        </div>
+        <div class="intro-formula">
+          F = qv × B<small>改变条件，发现规律</small>
+        </div>
+      </section>
+      <nav id="model-nav" aria-label="选择实验"></nav>
+      <section class="experiment" aria-label="交互实验">
+        <div class="workspace">
+          <div class="scene-heading">
+            <div>
+              <p id="experiment-number" class="eyebrow"></p>
+              <h2 id="model-title"></h2>
+              <p id="model-subtitle"></p>
+            </div>
+            <span id="status" role="status">已暂停</span>
+          </div>
+          <div class="canvas-wrap">
+            <canvas
+              id="scene"
+              aria-label="物理实验画布，可拖动空间模型旋转视角"
+            ></canvas
+            ><span id="canvas-hint">参数变化后，轨迹将从初始状态重新计算</span>
+            <div id="geometry-handles" aria-label="可拖动的实验对象"></div>
+            <div class="view-tools" aria-label="画面缩放">
+              <button id="zoom-in" aria-label="放大画面">＋</button>
+              <button id="zoom-out" aria-label="缩小画面">−</button>
+              <button id="view-reset">全景</button>
+              <button id="focus-view" aria-pressed="false">专注</button>
+              <button id="show-theory">原理 / 数据</button>
+            </div>
+            <span id="view-hint">双指缩放 · 拖动画面</span>
+          </div>
+          <div class="transport">
+            <button id="play" class="primary">开始演示</button
+            ><button id="step">单步</button
+            ><button id="restart" hidden>重新入射</button
+            ><button id="reset">恢复默认</button
+            ><button id="clear">清空轨迹</button>
+            <div class="speed" role="group" aria-label="演示速度">
+              <span>速度</span>
+              <div
+                id="speed-options"
+                class="segments"
+                role="radiogroup"
+                aria-label="演示速度"
+              >
+                <button
+                  role="radio"
+                  aria-checked="false"
+                  tabindex="-1"
+                  data-speed="0.5"
+                >
+                  0.5×
+                </button>
+                <button
+                  role="radio"
+                  aria-checked="true"
+                  tabindex="0"
+                  data-speed="1"
+                >
+                  1×
+                </button>
+                <button
+                  role="radio"
+                  aria-checked="false"
+                  tabindex="-1"
+                  data-speed="2"
+                >
+                  2×
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            id="stats"
+            class="stats"
+            aria-label="实时测量"
+            aria-live="off"
+          ></div>
+        </div>
+        <aside class="settings">
+          <div class="mobile-parameter-bar">
+            <div
+              id="parameter-tabs"
+              role="tablist"
+              aria-label="选择当前调节参数"
+            ></div>
+            <button
+              id="all-parameters"
+              aria-expanded="false"
+              aria-controls="controls"
+            >
+              更多
+            </button>
+          </div>
+          <div class="settings-title">
+            <h3>实验参数</h3>
+            <span>实时响应</span>
+          </div>
+          <div id="controls"></div>
+          <p class="control-note">
+            点按参数标签直接切换调节项，方向和视图使用分段按钮，亮起的工具按钮表示开启；“更多”展开完整参数。画布上的圆点可直接拖动入射点、挡板与磁场边界，底部数值同步更新，也可聚焦手柄后用方向键微调。双指缩放，二维画面单指平移、三维画面单指旋转。“全景”恢复完整范围，“专注”收起导航和参数。调参时观察比例保持不变，便于比较轨迹大小。
+          </p>
+        </aside>
+      </section>
+      <section class="notes">
+        <div class="note-icon">i</div>
+        <div>
+          <h3>模型与原理</h3>
+          <p id="theory"></p>
+          <p class="interaction-help">
+            操作提示：电脑可使用滑块或画布手柄的方向键微调，手柄按住 Shift 为十倍步进；手机可点按标签、分段按钮或直接拖动圆点。三维实验支持鼠标或单指拖动旋转。“恢复默认”同时恢复参数、初始状态和观察视野；有界磁场的“重新入射”保留当前参数。显隐辅助线和右手模型不会清空运动轨迹。各实验的单位、方向约定与理想化条件见上方原理说明；画布尺寸不代表实际装置尺寸。
+          </p>
+        </div>
+      </section>
+      <footer>
+        磁场实验室
+        <span>基于目录中 7 份 Markdown 的独立交互实现 · 无外部依赖</span>
+      </footer>
+      <dialog id="theory-dialog">
+        <form method="dialog"><button>关闭</button></form>
+        <h3 id="dialog-title"></h3>
+        <p id="dialog-theory"></p>
+        <div id="dialog-stats"></div>
+      </dialog>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
